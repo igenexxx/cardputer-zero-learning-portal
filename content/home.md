@@ -4,6 +4,9 @@ Welcome to the interactive engineering handbook for **M5Stack CardputerZero** (R
 
 This portal bridges the gap between **pressing keys on pocket radio hardware** and **understanding the physics, digital signal processing, on-device machine learning, and wire protocols** happening underneath.
 
+> [!CAUTION]
+> **Legal & Responsible Use Disclaimer:** All software, guides, and interactive labs on this portal are provided strictly for **educational, research, hardware diagnostics, and authorized security testing** on devices, tags, networks, and frequencies that you own or have explicit written permission to test. Unauthorized interception, cloning, replay, jamming, or interference with third-party systems is illegal and punishable by law. Radio transmissions (Sub-GHz ISM, 13.56 MHz NFC, IR) are subject to local telecom regulations (FCC, ETSI/CE, etc.) — you are solely responsible for legal compliance. Everything is provided **"AS IS"** without warranty of any kind; use entirely at your own risk.
+
 ---
 
 ## How to Use This Portal
