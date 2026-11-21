@@ -29,7 +29,7 @@ Press **`Tab`**, **`9`**, or **`0`** to cycle across all six workspaces: **`RX` 
 Point any physical IR remote at CardputerZero's IR receiver and press a button:
 
 - **Ambient IR Interference Bar (`y = 20..30`):** Continuously measures idle receiver edges and duty cycle, reporting `AMB: CLEAN` (Emerald), `AMB: MODERATE 120Hz` (Amber, e.g. PWM LED lamp), or `AMB: SATURATED` (Red, direct sunlight).
-- **Live Waveform & Protocol Banner:** Displays the mark/space pulse train, decoded protocol (`NEC`, `NECext`, `Samsung32`, `RC5`, `RC6`, `SIRC`, `Kaseikyo`) with hex `Address`/`Command`, or `RAW` carrier and pulse count.
+- **Live Waveform & Protocol Banner:** Displays the mark/space pulse train, decoded protocol (`NEC`, `NECext`, `Samsung32`, `RC5`, `RC6`, `SIRC`, `Kaseikyo`) with hex `Address`/`Command`, or `RAW` carrier and pulse count. On `/dev/lirc*` receivers advertising `LIRC_CAN_MEASURE_CARRIER`, `ir-studio` automatically enables `LIRC_SET_MEASURE_CARRIER_MODE` and populates `CarrierEstHz` directly from hardware `LIRC_MODE2_FREQUENCY` packets.
 - **ML Diagnostics:** Shows the 1D K-Means centroids (`Short`/`Long` µs), `12→24→3` MLP class (`TV/Remote`, `AC State-Frame`, or `Ambient Noise`), and top **8D IR Fingerprint** match against installed `Flipper-IRDB` packs (e.g., `Match: Daikin_ARC480.ir (96%)`).
 - **Softkeys (`4..8`):**
   - **`4 HOLD` / `LEARN`**: Toggle live IR capture listening vs. holding the current frame.
@@ -71,7 +71,7 @@ Press **`1`** (or **`8 AC`** on a USER remote) inside `REMOTE` to open the offli
 
 ![IR Studio PROBE tab running Universal Power-Off sweep with 12-slot rewind trail](assets/ir-studio/probe.png)
 
-`PROBE` works **100% offline out of the box** using the compiled-in **`GEN:TV-B-Gone`** virtual pack (`GEN:TVBG` Cyan badge, **100 universal `Power` codes** across major TVs, Projectors, and Soundbars), as well as any synced read-only external `.ir` packs:
+`PROBE` works **100% offline out of the box** using two compiled-in read-only virtual packs—**`GEN:TV-B-Gone`** (`GEN:TVBG` Cyan badge, **100 universal `Power` codes** across major TVs, Projectors, and Soundbars) and **`GEN:TV-Service`** (discrete `Power_ON`/`Power_OFF`/`HDMI_1..4` and vendor service commands including LG `IN_START`/`EZ_ADJUST`, Samsung service codes, and Sony/Panasonic/Philips discrete remotes)—as well as any synced read-only external `.ir` packs:
 
 1. On a fresh install, **`GEN:TV-B-Gone`** is pre-selected automatically with `100` ready-to-fire `Power` codes. Press **`8 PACK`** to cycle `USER → GEN:TV-B-Gone → <synced DB packs>` and **`7 ACT`** to filter by action (`Power`, `Cool`, `Mute`, `Off`, `All`).
 2. *(Optional — 1-Button Recovery)* If you have a half-broken remote with even **one** working button, capture it in `RX` first, then switch to `PROBE` and press **`R`** (**Smart Probe Ranking**). `ir-studio` reorders the pack descending by 8D IR cosine similarity so the closest brand/protocol fires first.
@@ -205,3 +205,6 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/ir-studio --mcp
 | `ir_list_sources` / `ir_add_source` | Manage HTTPS-only remote `.ir` sources in `~/.config/ir-studio/sources.json` |
 | `ir_sync_sources` | Incremental `ETag`/`SHA` delta sync into `~/ir-studio/databases/<id>/` |
 | `ir_remove_source` / `ir_delete_pack_files` | Batch-remove sources or specific pack files (**`confirm: true`**) |
+| `ir_import_pronto` / `ir_export_pronto` | Lossless Pronto Hex (`0000 006D ...`) import (optional path-sandboxed `save_as`) and export from any button or pulse train |
+| `ir_modem_send` / `ir_modem_recv` | 38 kHz IR optical data modem (`<= 64 B` payload + CRC-8-CCITT, `±120 µs` jitter tolerant; send requires **`confirm_ir: true`**) |
+| `ir_tripwire_probe` | Bounded 38 kHz reflective/beam-break optical tripwire probe (`1..10` pings, **`confirm_ir: true`**, `SIM` fallback) |

@@ -204,6 +204,7 @@ Press **`Tab`** or **`8 (MODE)`** to reach the **`SET`** tab. All settings are s
 - **Reset ML Baseline**: Instantly clears `SweepBaseline`, `LiveBaseline`, Kalman Foxhunt state, and IAT activity tracker when moving into a new RF environment without changing ISM bands.
 - **Sync DB Sources**: Runs a non-blocking incremental delta sync for all enabled remote sources in `~/.config/rf-heatmap/sources.json` (GitHub repositories via Git Trees API or HTTPS JSON manifests), downloading **only new or changed `.sub` files** into isolated `~/rf-heatmap/databases/<id>/` folders using `ETag` (`304 Not Modified`) and per-file `SHA` tracking (`.sync-state.json`). Also runnable headlessly via `rf-heatmap --sync`.
 - **Manage DB Sources**: Opens a dedicated sub-screen listing all configured sources and downloaded `~/rf-heatmap/databases/<id>/` folders. Mark one or multiple items with `Space`/`Enter`/`1`/`D` (`[x]`), toggle `ON/OFF` (`4`), delete pack directories only (`5 DIR`, 2-step confirm), or delete both `sources.json` entries and pack directories (`6 ALL` / `Del`, 2-step confirm). Individual `.sub` files can also be batch-deleted in `SAVED` (`Space` + `6 DEL`) and inside downloaded `DB:*` packs in `PROBE` (`1`/`D` + `Del`, automatically recorded in `.sync-state.json` `ignored` so future syncs won't re-download them).
+- **TX Power (PATABLE)**: Steps CC1101 RF output power across `-30, -20, -10, 0, +5, +10 dBm` (`Z`/`C` or `Enter`) using TI DN013 band-calibrated `PATABLE` values for `315 / 433 / 868 / 915 MHz`, persisted in `config.json` (`tx_power_dbm`). Live CC1101 frequency offset (`FREQEST 0x32`) also appears as a `DF:±kHz` drift badge in `PULSE` and `DECODE` (amber when `> ±5 kHz`).
 
 ### Invoking Over SSH (`--mcp`)
 
@@ -216,9 +217,15 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/rf-heatmap --mcp
 | `rf_get_status` | CC1101 chip identity (`0x00`/`0x14`), settings, bands, presets |
 | `rf_sweep_band` | Multi-sweep ISM band scan with `rfml.BinBaseline` noise floor & anomaly bursts |
 | `rf_read_rssi` | Live single-channel RSSI sampling with Smart Squelch stats |
+| `rf_measure_freq_offset` | Read CC1101 `FREQEST (0x32)` carrier drift (Hz/ppm), RSSI, and `LQI (0x33)` / `CRC_OK` |
+| `rf_set_tx_power` | Set band-calibrated `PATABLE` TX power (`-30, -20, -10, 0, +5, +10 dBm`) and persist to `config.json` |
+| `rf_wor_listen` | Configure CC1101 Wake-On-Radio (`WOREVT1/0`, `MCSM2`, `WORCTRL`, `SWOR`) and monitor wake RSSI |
+| `rf_send_packet` / `rf_recv_packet` | 64B hardware FIFO Packet Engine TX (`confirm_rf: true`) / RX with Sync Word, CRC-16, whitening, and RSSI/LQI |
 | `rf_decode_ook` | Decode signed µs pulses (`Princeton`, `PT2262`, `EV1527`, `CAME`, `Linear`, `Holtek`, `Nice FLO`, `KeeLoq`, `Somfy Telis`) |
 | `rf_analyze_rolling_code` | Analyze 1..8 captures for `KeeLoq`, `Somfy Telis`, or generic consecutive rolling-code hopping |
 | `rf_decode_sensor` | Decode TPMS (`Schrader`/`Toyota`) or Weather (`Oregon`/`Acurite`/`LaCrosse`) telemetry (supports `sim_sample: true`) |
+| `rf_decode_pocsag` | Pure-Go POCSAG (`512/1200/2400 bps`) decoder with BCH(31,21) 1-bit error correction & 7-bit alpha / 4-bit numeric |
+| `rf_decode_wmbus` | Pure-Go EN 13757-4 Wireless M-Bus (`T1/C1/S1`, `868.95 MHz`) decoder (M-field, BCD serial, device type, CI, CRC-16) |
 | `rf_foxhunt_sample` | Lightweight locked-frequency RSSI sample with peak-hold, Kalman state, and Geiger cadence |
 | `rf_trim_raw` | Trim leading/trailing noise from RAW `.sub` or inline pulses, repeat `1..10x`, and save atomically into `captures/` |
 | `rf_list_saved` / `rf_read_saved` | Inspect Flipper `.sub` files (supports `source` and `pack` filters) |
