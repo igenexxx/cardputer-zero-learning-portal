@@ -128,11 +128,34 @@ The community repository [`Lucaslhm/Flipper-IRDB`](https://github.com/Lucaslhm/F
 - `Fans/`, `LEDs/`, `Projectors/`, `Audio/`, `Cameras/`
 
 > [!TIP]
-> Instead of syncing the entire repository (tens of thousands of files), register **targeted subfolders** using `kind: "github_tree"` and `subpath` in `SET → Manage DB Sources` (or via MCP `ir_add_source`):
-> - Example: `id: "irdb-tvs"`, `kind: "github_tree"`, `url: "https://github.com/Lucaslhm/Flipper-IRDB"`, `subpath: "TVs"`
-> - Example: `id: "irdb-acs"`, `kind: "github_tree"`, `url: "https://github.com/Lucaslhm/Flipper-IRDB"`, `subpath: "ACs"`
+> Instead of syncing the entire repository (tens of thousands of files), register **targeted subfolders** in **`~/.config/ir-studio/sources.json`** (or via **`SET → Manage DB Sources`** / MCP `ir_add_source`), then run **`ir-studio --sync`** or **`SET → Sync DB Sources`**:
 
-Incremental sync stores Git `SHA` / HTTP `ETag` state in `~/ir-studio/databases/<id>/.sync-state.json`, so subsequent syncs download only added or updated `.ir` files.
+```json
+[
+  {
+    "id": "flipper-tvs",
+    "name": "Flipper-IRDB TVs",
+    "kind": "github",
+    "repo": "Lucaslhm/Flipper-IRDB",
+    "branch": "main",
+    "path_prefix": "TVs",
+    "enabled": true,
+    "prune": false
+  },
+  {
+    "id": "flipper-acs",
+    "name": "Flipper-IRDB ACs",
+    "kind": "github",
+    "repo": "Lucaslhm/Flipper-IRDB",
+    "branch": "main",
+    "path_prefix": "ACs",
+    "enabled": true,
+    "prune": false
+  }
+]
+```
+
+Each enabled source syncs into its own read-only pack folder at **`~/ir-studio/databases/<id>/`** and stores Git `SHA` / HTTP `ETag` state in **`~/ir-studio/databases/<id>/.sync-state.json`**, so subsequent syncs download only added or updated `.ir` files. Your personal remotes stay isolated in **`~/ir-studio/remotes/`**.
 
 ---
 

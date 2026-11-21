@@ -108,7 +108,24 @@ The **`PROBE`** tab lets you step automatically through read-only external `.nfc
 - Press **`7` (`PACK`)** to switch between `DB:<pack>`, `ext:zerosub`, and `USER`; adjust dwell time with **`Z` / `C`**.
 - Press **`4` (`AUTO`)** / **`Space`** to begin sequential Passive Target A emulation. Hit **`4` (`STOP`)** / **`Space`** / **`Enter`** immediately when the reader responds — **`>`** (last emulated) and **`*`** (previous 12) let you backtrack with **`F` / `X`**, single-test with **`5` (`TRY`)**, and copy the winning `.nfc` into `~/nfc-studio/tags/` with **`6` (`SAVE`)**.
 - Delete unwanted `.nfc` files inside downloaded `~/nfc-studio/databases/<pack>/` folders with **`1` / `D`** + **`Del`** (2-step confirm; recorded in `.sync-state.json` `ignored` so future syncs skip them).
-- Sync remote GitHub or HTTPS JSON manifest `.nfc` sources via **`SET → Sync DB Sources`** or **`nfc-studio --sync`**, and toggle or batch-delete pack folders & `sources.json` entries in **`SET → Manage DB Sources`**.
+- Sync remote GitHub or HTTPS JSON manifest `.nfc` sources configured in **`~/.config/nfc-studio/sources.json`** via **`SET → Sync DB Sources`** or **`nfc-studio --sync`**, and toggle or batch-delete pack folders & entries in **`SET → Manage DB Sources`**.
+
+Example **`~/.config/nfc-studio/sources.json`** (synced into read-only **`~/nfc-studio/databases/<id>/`** with `.sync-state.json` delta tracking):
+
+```json
+[
+  {
+    "id": "amiibo-nfc",
+    "type": "github",
+    "owner": "Lucaslhm",
+    "repo": "Flipper-NFC-DB",
+    "branch": "main",
+    "subpath": "Amiibo",
+    "enabled": true,
+    "prune": false
+  }
+]
+```
 
 ---
 
