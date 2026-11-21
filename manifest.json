@@ -1,0 +1,92 @@
+{
+  "title": "CardputerZero RF & NFC Lab",
+  "subtitle": "Interactive Hardware, Sub-GHz ML & NFC Learning Portal",
+  "defaultRoute": "home",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "items": [
+        {
+          "slug": "home",
+          "title": "Portal Home",
+          "file": "content/home.md",
+          "badge": "Start"
+        }
+      ]
+    },
+    {
+      "id": "rf-heatmap",
+      "title": "RF Heatmap (Sub-GHz)",
+      "items": [
+        {
+          "slug": "rf-guide",
+          "title": "App Guide & Controls",
+          "file": "content/rf-heatmap/guide.md"
+        },
+        {
+          "slug": "rf-domain",
+          "title": "Sub-GHz & CC1101 Theory",
+          "file": "content/rf-heatmap/subghz-domain.md"
+        },
+        {
+          "slug": "rf-ml",
+          "title": "ML: Smart Squelch & Auto-Lock",
+          "file": "content/rf-heatmap/smart-squelch-ml.md",
+          "badge": "ML"
+        },
+        {
+          "slug": "rf-ml-cluster",
+          "title": "ML: 1D K-Means Pulse Denoiser",
+          "file": "content/rf-heatmap/pulse-clustering-ml.md",
+          "badge": "ML"
+        },
+        {
+          "slug": "rf-ml-classify",
+          "title": "ML: 12->24->5 Signal Classifier",
+          "file": "content/rf-heatmap/signal-classifier-ml.md",
+          "badge": "ML"
+        },
+        {
+          "slug": "rf-ml-fingerprint",
+          "title": "ML: RF Fingerprinting (k-NN)",
+          "file": "content/rf-heatmap/rf-fingerprinting-ml.md",
+          "badge": "ML"
+        },
+        {
+          "slug": "rf-ml-foxhunt",
+          "title": "ML: Kalman Foxhunt & Periodicity",
+          "file": "content/rf-heatmap/foxhunt-kalman-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "nfc-studio",
+      "title": "NFC Studio (13.56 MHz)",
+      "items": [
+        {
+          "slug": "nfc-guide",
+          "title": "App Guide & Controls",
+          "file": "content/nfc-studio/guide.md"
+        },
+        {
+          "slug": "nfc-domain",
+          "title": "NFC & ISO 14443-A Theory",
+          "file": "content/nfc-studio/nfc-domain.md"
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "title": "Reference",
+      "items": [
+        {
+          "slug": "glossary",
+          "title": "Domain Glossary",
+          "file": "content/glossary.md"
+        }
+      ]
+    }
+  ]
+}
