@@ -40,7 +40,17 @@ A pure-Go NFC reader, NTAG21x/MIFARE inspector, NDEF parser, and Passive Target 
 | **App Guide & Controls** | All 4 tabs (`SCAN`, `DUMP`, `EMU`, `SAVED`), automatic SPI overlay loading, `--probe` diagnostics, and hands-on card scanning & UID emulation labs | [Open NFC Studio Guide →](#/nfc-guide) |
 | **NFC & ISO 14443-A Theory** | 13.56 MHz HF vs 125 kHz LF physics, ST25R3916 FIFO & IRQ architecture, `WUPA → ATQA → Anticollision → SAK` handshake, 4B/7B UIDs, NTAG memory & NDEF TLV + **Interactive NFC Lab** | [Open NFC Theory →](#/nfc-domain) |
 
-### 3. Reference & Vocabulary
+### 3. IR Studio — 38 kHz Infrared Lab (`/dev/lirc*`)
+
+A pure-Go 38 kHz Infrared transceiver studio, multi-protocol encoder/decoder (`NEC`, `Samsung32`, `RC5`, `RC6`, `SIRC`, `Kaseikyo`), Flipper `.ir` virtual remote deck, Universal Power-Off `PROBE`, multi-device `MACRO` runner, and zero-allocation on-device IR ML engine.
+
+| Module | What You Will Master | Link |
+| --- | --- | --- |
+| **App Guide & Controls** | All 6 tabs (`RX`, `REMOTE`, `PROBE`, `SAVED`, `MACRO`, `SET`), Universal Power-Off `PROBE`, `Flipper-IRDB` pack sync, and 21-tool SSH MCP setup | [Open IR Studio Guide →](#/ir-guide) |
+| **Infrared, LIRC & Protocol Theory** | 940 nm carrier & duty cycle, pulse-distance vs pulse-width vs Manchester encoding, stateful AC frames & `SUM8`, Linux `/dev/lirc*` ioctls + **Interactive IR Lab** | [Open IR Theory →](#/ir-domain) |
+| **ML: Pulse Denoiser, Classifier & Fingerprint** | 1D K-Means pulse denoiser (`ML-CLEAN`), `12→24→3` MLP + Smart Save Guard, 8D IR Fingerprint k-NN (`±4 kHz` gate), Smart Probe Ranking (`R`), and Ambient IR monitor | [Open IR ML →](#/ir-ml) |
+
+### 4. Reference & Vocabulary
 
 | Module | What You Will Master | Link |
 | --- | --- | --- |

@@ -12,6 +12,24 @@ A plain-text Flipper Zero compatible Sub-GHz capture file (`Filetype: Flipper Su
 ### 2-FSK (Binary Frequency-Shift Keying)
 A digital modulation scheme that represents binary `0` and `1` by shifting the carrier frequency slightly below or above the center frequency ($f_c \pm \Delta f$). More noise-immune than OOK/ASK and common in weather stations, TPMS sensors, and modern telemetry.
 
+### Auto-Probe (`PROBE` Mode)
+A timed, interruptible Sub-GHz playlist transmitter in `rf-heatmap` that steps through a read-only **Database Pack**, a database-free **Virtual Generator Pack** (`GEN:CAME-12`, `GEN:Linear-10`, `GEN:CAME-868`), or the **User Library** at a configurable interval (`0.05s–5.0s`). Supports instant mid-burst cancellation (`STOP`), 12-slot visual `>` / `*` sent-history markers for reaction-time backtracking, single-candidate `TRY`, and one-key promotion of the winning signal into `~/rf-heatmap/captures/`.
+
+### Virtual Generator Pack (`GEN:*`)
+An O(1)-memory catalog in `rf-heatmap`'s `PROBE` mode (`GeneratorCatalog`) that synthesizes short fixed-code Sub-GHz keys on the fly (`Linear 10-bit` = 1,024 keys; `CAME 12-bit` = 4,096 keys) without requiring `.sub` files on disk, supporting live `B`/`M` carrier frequency and modulation overrides and one-key saving to the User Library.
+
+### Database Pack vs. User Library
+`rf-heatmap`'s strict storage separation between read-write user captures (`~/rf-heatmap/captures/`, managed in `SAVED`) and read-only external `.sub` collections (`~/rf-heatmap/databases/<pack>/` and `~/subg/files/`, probed in `PROBE`). External packs are lazy-parsed and protected from `DEL` and `PURGE`.
+
+### Incremental Delta Sync (`dbsync` & `.sync-state.json`)
+`rf-heatmap`'s pure-Go synchronization engine for remote `.sub` database sources (GitHub repositories via Git Trees API or HTTPS JSON manifests configured in `~/.config/rf-heatmap/sources.json`). Uses HTTP `ETag` (`304 Not Modified`) and per-file Git `SHA` / `SHA-256` hashes stored in `.sync-state.json` inside `~/rf-heatmap/databases/<id>/` so re-syncing downloads only new or modified `.sub` files.
+
+### OOK Keying (`GDO0` / `GPIO 15`)
+Asynchronous serial transmission on the TI CC1101 (`IOCFG0 = 0x0D`, `PKTCTRL0 = 0x32`), where CardputerZero drives `GPIO 15` (`GDO0`) high (`+µs`) to emit the RF carrier and low (`-µs`) to silence it via Linux `/dev/gpiochip0` v2 ioctl, restoring `IDLE` and High-Z (`0x2E`) on completion or cancellation.
+
+### Promote to User
+Copying a confirmed working `.sub` signal from a read-only external **Database Pack** into the read-write **User Library** (`~/rf-heatmap/captures/`) with path-sandbox validation and collision-safe naming (`name_2.sub`).
+
 ### CC1101
 Texas Instruments' ultra-low-power Sub-GHz RF transceiver IC on the CardputerZero Cap. Covers 300–348 MHz, 387–464 MHz, and 779–928 MHz; supports OOK, ASK, 2-FSK, GFSK, and MSK; provides hardware RSSI readout and SPI control on `/dev/spidev0.1`.
 
@@ -96,6 +114,9 @@ A Z-score of `0` is normal background noise; $z \ge 3.0$ flags a likely burst; $
 ---
 
 ## NFC & RFID
+
+### External Reader Field Detection
+Measuring the 13.56 MHz RF carrier amplitude emitted by an external NFC reader (such as a phone or access-control terminal) using the ST25R3916 `MeasureAmplitude (0xD3)` ADC command while the local TX driver is off in Passive Target (card emulation) mode. Powers `nfc-studio`'s live `EMU` radar RF strength bar (`0–100%`) and `nfc_get_status` MCP telemetry.
 
 ### `.nfc` File
 A plain-text Flipper Zero compatible NFC dump format (`Filetype: Flipper NFC device`, `Version: 4`) storing `Device type`, `UID`, `ATQA`, `SAK`, `Pages total`, and hex `Page N:` / `Block N:` rows. Fully interoperable between `nfc-studio` and Flipper Zero.
@@ -239,3 +260,64 @@ The elapsed time between consecutive rising-edge RF bursts on a channel. Regular
 
 ### Coefficient of Variation (CV)
 The dimensionless ratio of standard deviation to mean ($\sigma / \mu$). `PeriodicityTracker` uses `CV <= 0.15` over burst IATs to distinguish automated periodic beacons from human button presses.
+
+---
+
+## Infrared & LIRC
+
+### 1D K-Means IR Denoiser
+`ir-studio`'s zero-allocation pulse-cleaning pipeline (`internal/irml/cluster.go`) that absorbs sub-`120 µs` ambient/AGC EMI glitches into preceding pulses (preserving mark/space alternation and frame period), keeps AGC preambles (`>= 2200 µs`) intact, and quantizes jittery data symbols to `ShortUs`/`LongUs` 1D K-Means centroids to rescue protocol decoding (`ML-CLEAN`).
+
+### AC State-Frame
+A long, stateful HVAC infrared packet (`64–200+` bits, often split across 2–3 subframes with `> 8000 µs` gaps) transmitted on every air-conditioner keypress. Encodes full appliance state (power, temperature, mode, fan, swing) and usually ends with a `SUM8` modular checksum.
+
+### Ambient IR Interference
+Unwanted optical infrared energy from sunlight (DC photodiode saturation) or PWM-dimmed LED lamps and fluorescent ballasts (`100 Hz` / `120 Hz` flicker) that injects spurious edges into `/dev/lirc*`. Tracked continuously by `AmbientMonitor` (`CLEAN` / `MODERATE` / `SATURATED`).
+
+### Carrier Frequency
+The high-frequency modulation rate (`36–56 kHz`, nominal `38 kHz`) at which a 940 nm IR LED is pulsed during every mark so integrated receivers (TSOP/VS1838) can reject steady ambient light via an internal bandpass filter.
+
+### Duty Cycle (IR)
+The percentage of each IR carrier cycle during which the emitter LED is powered ON (`33%` default vs `50%` square wave). `33%` reduces LED heating and allows higher peak current while maintaining strong fundamental carrier amplitude.
+
+### Flipper `.ir` Format
+A plain-text multi-button Infrared remote file (`Filetype: IR signals file`, `Version: 1`) containing `#`-delimited `type: parsed` commands (`protocol`, `address`, `command`) and `type: raw` signals (`frequency`, `duty_cycle`, positive microsecond `data:`). Fully interoperable between `ir-studio`, Flipper Zero, and `Flipper-IRDB`.
+
+### IR Fingerprint k-NN
+`ir-studio`'s zero-allocation nearest-neighbor matcher (`internal/irml/fingerprint.go`) that projects any captured or parsed IR button into an L2-normalized **8D timing embedding** (`[8]float32`) and ranks `Flipper-IRDB` remotes by cosine similarity with a **`±4 kHz` carrier gate** for single-button remote model recovery.
+
+### IR Macro
+An ordered sequence of `(remote, button, delay_after_ms)` steps stored in `~/.config/ir-studio/macros.json` (`0600`) that automates multi-appliance routines (e.g., TV + Soundbar + HDMI input) with cancellable inter-step delays.
+
+### LIRC mode2
+The Linux kernel's `/dev/lirc*` raw IR receive stream (`LIRC_MODE_MODE2 = 0x04`), delivering 32-bit packets whose top byte distinguishes marks (`LIRC_MODE2_PULSE = 0x01000000`), spaces (`LIRC_MODE2_SPACE = 0x00000000`), and end-of-frame timeouts (`LIRC_MODE2_TIMEOUT = 0x03000000`), with microsecond duration in the lower 24 bits.
+
+### Manchester Encoding
+A self-clocking bi-phase baseband modulation used by Philips **`RC5`** (`36 kHz`, `TE = 889 µs`) and **`RC6`** (`36 kHz`, `TE = 444 µs`) where every bit occupies a fixed slot and is encoded by the **direction of the mid-bit mark/space transition** (`1 = -TE/+TE`, `0 = +TE/-TE` in RC5).
+
+### Mark / Space
+The two alternating baseband states of a demodulated IR pulse train: a **Mark** (`+µs`) is an active carrier-modulated LED burst; a **Space** (`-µs`) is a silent LED-OFF gap.
+
+### NEC Repeat Frame
+A compact 3-pulse frame (`+9000 µs` mark, `-2250 µs` space, `+562 µs` stop mark) emitted every `108 ms` while a button is held down on an `NEC` remote, signaling the receiver to repeat the previously decoded command without retransmitting all 32 bits.
+
+### Pulse-Distance Encoding
+An IR baseband modulation used by **`NEC`**, **`NECext`**, **`Samsung32`**, and **`Kaseikyo`** where every bit begins with a constant-width mark (`1×TE`) and binary `0` vs `1` is encoded by the following **space** length (`1×TE` = `0`, `3×TE` = `1`).
+
+### Smart Probe Ranking
+Pressing **`R`** in `ir-studio`'s `PROBE` tab to reorder the active `Flipper-IRDB` pack descending by 8D IR cosine similarity against the last captured button, transmitting the most likely brand and protocol candidates first.
+
+### Smart Save Guard
+An `ir-studio` UX safeguard powered by the `12→24→3` IR MLP classifier: when a live capture is classified as `Ambient Noise` with confidence `>= 85%`, pressing `SAVE` prompts for explicit confirmation before writing to `~/ir-studio/remotes/`.
+
+### TransceiverGate
+`ir-studio`'s hardware synchronization coordinator (`internal/lirc/gate.go`) enforcing strict TX/RX mutual exclusion on `/dev/lirc*`: mutes and flushes `RXWorker` before transmission and enforces a **`>= 20 ms` post-TX optical settle guard** so emitted IR pulses never loop back into RX.
+
+### Carrier Frequency Sweeper (`SweepCarrier`)
+`ir-studio`'s rapid multi-carrier resend utility (`internal/lirc/sweeper.go`, `5 SWEEP` / `ir_sweep_carrier`) that transmits an IR signal sequentially across `[36000, 38000, 40000, 56000]` Hz to trigger finicky receivers (Philips RC5 `36 kHz`, Sony SIRC `40 kHz`, Cisco/Motorola `56 kHz`) and unconditionally restores hardware defaults (`38000 Hz / 33%`) on completion, error, or cancellation.
+
+### `GEN:TV-B-Gone` Virtual Pack
+`ir-studio`'s compiled-in, zero-disk read-only virtual database pack (`internal/library/tvbgone.go`) bundling 100 priority-ordered universal `Power` codes across major TV, Projector, and Soundbar brands for 100% offline `PROBE` sweeps immediately on first boot before running `--sync`.
+
+### Smart AC State-Frame Controller
+`ir-studio`'s interactive parametric HVAC controller (`internal/irfile/ac_state.go`, `REMOTE → AC`, `ir_send_ac_state`) that synthesizes complete, checksummed IR state frames (`SUM8`, 4-bit nibble sum, or byte-complement pairs) on the fly for `Gree`, `Midea`, `Daikin`, `LG_AC`, `Samsung_AC`, and `Mitsubishi` mini-split units and saves any state as a standard Flipper `.ir` button.

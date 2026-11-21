@@ -9,3 +9,4 @@ export { mountOokDecoder } from "./widgets/ook-decoder.js";
 export { mountNfcInspector } from "./widgets/nfc-inspector.js";
 export { mountSignalClassifier } from "./widgets/signal-classifier.js";
 export { mountFoxhuntRadar } from "./widgets/foxhunt-radar.js";
+export { mountIrLab } from "./widgets/ir-lab.js";

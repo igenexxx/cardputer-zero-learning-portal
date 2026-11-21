@@ -1,6 +1,6 @@
 {
-  "title": "CardputerZero RF & NFC Lab",
-  "subtitle": "Interactive Hardware, Sub-GHz ML & NFC Learning Portal",
+  "title": "CardputerZero RF, NFC & IR Lab",
+  "subtitle": "Interactive Hardware, Sub-GHz ML, NFC & 38 kHz IR Learning Portal",
   "defaultRoute": "home",
   "sections": [
     {
@@ -74,6 +74,34 @@
           "slug": "nfc-domain",
           "title": "NFC & ISO 14443-A Theory",
           "file": "content/nfc-studio/nfc-domain.md"
+        },
+        {
+          "slug": "nfc-ml",
+          "title": "ML: Dump Profiler, IAT & Field ADC",
+          "file": "content/nfc-studio/nfc-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "ir-studio",
+      "title": "IR Studio (38 kHz Infrared)",
+      "items": [
+        {
+          "slug": "ir-guide",
+          "title": "App Guide & Controls",
+          "file": "content/ir-studio/guide.md"
+        },
+        {
+          "slug": "ir-domain",
+          "title": "Infrared, LIRC & Protocol Theory",
+          "file": "content/ir-studio/ir-domain.md"
+        },
+        {
+          "slug": "ir-ml",
+          "title": "ML: Pulse Denoiser, Classifier & Fingerprint",
+          "file": "content/ir-studio/ir-ml.md",
+          "badge": "ML"
         }
       ]
     },

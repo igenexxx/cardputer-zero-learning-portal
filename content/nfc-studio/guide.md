@@ -40,10 +40,11 @@ Use **`Tab`** or **`8`** (`MODE`) at any time to cycle through the four views: *
 
 The `SCAN` tab runs a background hardware poller every **180 ms** (keeping SPI I/O off the UI thread) to discover ISO 14443-A tags without freezing the display.
 
-- **Left Radar Panel:** Animates an expanding 13.56 MHz field ring while active. Its bottom label reports live RF status:
-  - **`DETECTED`** (Emerald): A real tag responded within the last **1.5 seconds**.
-  - **`13.56M`** (Muted): Actively polling the RF field, waiting for a card.
-  - **`PAUSED`** (Amber): Polling paused by pressing `4` (`HOLD`) or `Space`.
+- **Left Adaptive ADC Radar Panel:** Driven by live ST25R3916 `MeasureAmplitude (0xD3)` / `MeasurePhase (0xD5)` readings through `FieldBaseline`. Its center glyph adapts to the detected source (NTAG chip, MIFARE/DESFire access card, Encrypted padlock, or `!` Metal Detune alert), while the concentric rings, corner lock reticles, bottom signal bar, and footer report live RF coupling:
+  - **`LOCK XX%`** (Emerald): Optimal antenna **Sweet Spot** (`75–100%` coupling).
+  - **`SIG XX%`** (Cyan): Weak coupling — move the tag closer to the antenna center.
+  - **`METAL!`** (Red/Amber): Conductive metal detuning detected (`|PhaseZ| >= 6σ`).
+  - **`13.56M`** (Muted) / **`PAUSED`** (Amber): Idle polling or paused via `4` (`HOLD`) / `Space`.
 - **Right Tag Summary Card:** Displays the identified card family (`NTAG21x / MFU`, `MIFARE Classic 1K`, `MIFARE Classic 4K`, `ISO14443-4 / DESFire`, or `ISO14443-3A`), full hex **UID** (4-byte or 7-byte), **ATQA** (2 bytes), **SAK** (1 byte), and dumped page count.
 - **Bottom NDEF Strip:** Automatically scans Type 2 user memory (Page 4+) for an NDEF TLV (`0x03`) and previews decoded URI or Text payloads (e.g., `NDEF [URI]: https://cardputer.cc`).
 
@@ -76,7 +77,7 @@ Each row shows the page index (`P00`), 4 hex bytes, and a printable ASCII gutter
 
 The `EMU` tab switches the ST25R3916 out of Reader mode and into **ISO 14443-A Passive Target Mode** (`0xA0` PT_A memory). The transceiver turns off its own RF carrier and listens for an external reader's 13.56 MHz field, responding autonomously in hardware to `REQA`/`WUPA`, anticollision, and `SELECT` with your chosen **ATQA**, **UID** (4-byte or 7-byte), and **SAK**.
 
-- **Status & Border:** Switches from `IDLE` (grey border) to **`EMULATING 13.56MHz`** (emerald border + pulsing ring).
+- **Status, Border & External Reader RF Radar:** Switches from `IDLE` (grey border) to **`EMULATING 13.56MHz`** (emerald border). On the right side, the live **EMU Radar** animates outward transmission waves, displays the source glyph for the emulated card, measures real **external 13.56 MHz reader field strength** (`RF 0–100%` via `MeasureExternalField`), and flashes **`HIT!`** on every reader wake/select event.
 - **`HITS` Counter:** Increments in real time whenever `regInterruptTarget (0x1D)` detects an external reader waking (`WUA`) or selecting (`SDDC`) your emulated card.
 - **Quick Presets:**
   - **`5` (`RND`)**: Generates a fresh random UID (preserving the NXP `0x04` manufacturer prefix for 7-byte UIDs).
@@ -88,17 +89,26 @@ The `EMU` tab switches the ST25R3916 out of Reader mode and into **ISO 14443-A P
 
 ---
 
-### 4. `SAVED` — Flipper-Compatible `.nfc` Library
+### 4. `SAVED` — User `.nfc` Library
 
 ![NFC Studio SAVED tab listing exported Flipper-compatible .nfc files](assets/nfc-studio/saved.png)
 
-Pressing **`6` (`SAVE`)** in `SCAN` or `DUMP` writes the current tag as a standard **Flipper Zero Version 4 `.nfc`** file named `tag_HHMMSS.nfc` inside `~/nfc-studio/tags/`.
+Pressing **`6` (`SAVE`)** in `SCAN` or `DUMP` writes the current tag as a standard **Flipper Zero Version 4 `.nfc`** file named `tag_HHMMSS.nfc` strictly inside your read-write **User Library** (`~/nfc-studio/tags/`). External database packs live separately and are never mixed here.
 
-The `SAVED` tab automatically indexes `.nfc` files from **both**:
-- `~/nfc-studio/tags/` (default save location, overrideable via `--tags`)
-- `~/zerosub/nfc/` (shared Flipper-compatible NFC folder if present)
+Scroll with **`F` / `X`**, mark multiple tags with **`Space` / `1` / `D`** (`[x]`), then press **`4` (`EMU`)** / **`Enter`** to emulate, **`5` (`DUMP`)** to inspect, **`6` (`DEL`)** / `Del` to delete 1 or the selected batch (2-step confirmation), or **`7` (`SYNC`)** to rescan.
 
-Scroll the list with **`F` / `X`**, then press **`4` (`EMU`)** or **`Enter`** to emulate the selected tag immediately, **`5` (`DUMP`)** to inspect its hex/NDEF pages, **`6` (`DEL`)** or `Backspace`/`Delete` to remove it, or **`7` (`SYNC`)** to rescan disk directories.
+---
+
+### 5. `PROBE` — Auto-Emu Playlist & External `.nfc` Databases
+
+![NFC Studio PROBE tab with Auto-Emu and rewind markers](assets/nfc-studio/probe.png)
+
+The **`PROBE`** tab lets you step automatically through read-only external `.nfc` database packs (`~/nfc-studio/databases/<pack>/` and `~/zerosub/nfc/`) or your `USER` library at a configurable dwell interval (`0.5s–8.0s`):
+
+- Press **`7` (`PACK`)** to switch between `DB:<pack>`, `ext:zerosub`, and `USER`; adjust dwell time with **`Z` / `C`**.
+- Press **`4` (`AUTO`)** / **`Space`** to begin sequential Passive Target A emulation. Hit **`4` (`STOP`)** / **`Space`** / **`Enter`** immediately when the reader responds — **`>`** (last emulated) and **`*`** (previous 12) let you backtrack with **`F` / `X`**, single-test with **`5` (`TRY`)**, and copy the winning `.nfc` into `~/nfc-studio/tags/` with **`6` (`SAVE`)**.
+- Delete unwanted `.nfc` files inside downloaded `~/nfc-studio/databases/<pack>/` folders with **`1` / `D`** + **`Del`** (2-step confirm; recorded in `.sync-state.json` `ignored` so future syncs skip them).
+- Sync remote GitHub or HTTPS JSON manifest `.nfc` sources via **`SET → Sync DB Sources`** or **`nfc-studio --sync`**, and toggle or batch-delete pack folders & `sources.json` entries in **`SET → Manage DB Sources`**.
 
 ---
 
@@ -228,3 +238,9 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/nfc-studio --mcp
 | `nfc_emulate_tag` | Hardware Passive Target A emulation (`confirm_rf: true`, max 30s) |
 | `nfc_list_saved` / `nfc_read_saved` | Inspect saved Flipper `.nfc` library |
 | `nfc_save_tag` / `nfc_delete_saved` | Save or delete `.nfc` files (`delete` requires `confirm: true`) |
+| `nfc_write_ntag` | Write 4-byte NTAG213/215/216 pages (`WRITE 0xA2`) with read-back verify & system-page guard (`confirm_write: true`) |
+| `nfc_clone_magic_uid` | Clone 4-byte UID + XOR BCC onto Gen1A (`0x40`/`0x43`) or Gen2/CUID Magic Card (`confirm_write: true`) |
+| `nfc_compose_ndef` | Compose URL, Text, or Wi-Fi WSC NDEF TLV into 4-byte pages (optional `save_name` or `write_to_tag` with `confirm_write: true`) |
+| `nfc_dict_scan` | Known-key MIFARE Classic 1K/4K dictionary scan (built-in + `~/.config/nfc-studio/mf_keys.dict`, optional `.nfc` v4 export) |
+| `nfc_inspect_emv` | Strictly read-only ISO-DEP/EMV inspector (`RATS` + `SELECT PPSE` + `READ RECORD`) with mandatory PAN masking |
+| `nfc_scan_multiprotocol` | Sequential ST25R3916 discovery across NFC-A, NFC-B (`SENSB_REQ`), NFC-F/FeliCa (`SENSF_REQ`), and NFC-V/ISO 15693 (`INVENTORY`) |

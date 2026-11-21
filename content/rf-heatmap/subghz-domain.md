@@ -153,3 +153,19 @@ Preset: FuriHalSubGhzPresetOok650Async
 Protocol: RAW
 RAW_Data: -10500 350 -1050 1050 -350 350 -1050 1050 -350 -10500
 ```
+
+---
+
+## 8. CC1101 GDO0 Asynchronous TX & Auto-Probe Timing
+
+Transmitting a `.sub` signal on CardputerZero reverses the capture pipeline:
+
+1. **Pulse Synthesis (`subfile.EncodePulses`)**:
+   - `RAW` files pass their signed microsecond `RAW_Data` array directly to the transmitter.
+   - Decoded `Key` files (`Princeton`, `CAME`, `Linear`) are synthesized back into 4 repeated OOK PWM frames with proper sync gaps, strictly preserving `+high / -low` sign alternation.
+2. **CC1101 Async Serial Mode (`IOCFG0 = 0x0D`, `PKTCTRL0 = 0x32`)**:
+   - The driver tunes `FREQ2..0`, switches the dual SP3T antenna path (`GPIO 14` + `GDO2`), strobes `STX (0x35)`, and keys the RF carrier directly via **CardputerZero `GPIO 15` (`GDO0`)** using Linux's `/dev/gpiochip0` v2 character device ioctl (`CGO_ENABLED=0`, zero external dependencies).
+   - Monotonic deadline scheduling sleeps during long inter-frame sync gaps (`> 1.5 ms`) and spins briefly for sub-millisecond OOK edges (`320–500 µs`).
+   - On completion or immediate `STOP` cancellation, the driver unconditionally drives `GPIO 15` low, strobes `SIDLE (0x36)`, and returns `IOCFG0` to High-Z (`0x2E`).
+3. **Auto-Probe Reaction-Time Window**:
+   - During Auto-Probe, the next entry is scheduled only *after* the previous burst finishes plus the configured `ProbeInterval` (`0.3s–5.0s`), preventing queue drift. Keeping a 4-slot `RecentSent` trail (`>` and `*`) compensates for typical 0.5–2.0 s human reaction latency when stopping on a triggered device.

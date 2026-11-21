@@ -10,6 +10,7 @@ import {
   mountNfcInspector,
   mountSignalClassifier,
   mountFoxhuntRadar,
+  mountIrLab,
 } from "./widgets.js";
 import { escapeHtml, parseMarkdown } from "./markdown.js";
 import { createSearchController } from "./search.js";
@@ -20,6 +21,8 @@ const WIDGET_REGISTRY = {
   "interactive:nfc-inspector": mountNfcInspector,
   "interactive:signal-classifier": mountSignalClassifier,
   "interactive:foxhunt-radar": mountFoxhuntRadar,
+  "interactive:ir-protocol-lab": mountIrLab,
+  "interactive:ir-lab": mountIrLab,
 };
 
 const appState = {
