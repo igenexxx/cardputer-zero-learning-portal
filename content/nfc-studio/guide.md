@@ -71,17 +71,17 @@ Each row shows the page index (`P00`), 4 hex bytes, and a printable ASCII gutter
 
 ---
 
-### 3. `EMU` — Hardware Passive Target A Card Emulation
+### 3. `EMU` — Hardware Passive Target Card Emulation (NFC-A & FeliCa)
 
 ![NFC Studio EMU tab emulating an NTAG215 UID with live reader hit counter](assets/nfc-studio/emu.png)
 
-The `EMU` tab switches the ST25R3916 out of Reader mode and into **ISO 14443-A Passive Target Mode** (`0xA0` PT_A memory). The transceiver turns off its own RF carrier and listens for an external reader's 13.56 MHz field, responding autonomously in hardware to `REQA`/`WUPA`, anticollision, and `SELECT` with your chosen **ATQA**, **UID** (4-byte or 7-byte), and **SAK**.
+The `EMU` tab switches the ST25R3916 out of Reader mode and into **Passive Target Mode** — supporting both **ISO 14443-A (`PT_A 0xA0`)** and **FeliCa / NFC-F (`PT_F 0xA8`, 212/424 kbps)**. The transceiver turns off its own RF carrier and listens for an external reader's 13.56 MHz field, responding autonomously in hardware to `REQA`/`WUPA`/`SELECT` (NFC-A) or `SENSF_REQ` (FeliCa `IDm`/`PMm`/`System Code`). *(Per the ST25R3916 datasheet, NFC-B and NFC-V are read-only.)*
 
 - **Status, Border & External Reader RF Radar:** Switches from `IDLE` (grey border) to **`EMULATING 13.56MHz`** (emerald border). On the right side, the live **EMU Radar** animates outward transmission waves, displays the source glyph for the emulated card, measures real **external 13.56 MHz reader field strength** (`RF 0–100%` via `MeasureExternalField`), and flashes **`HIT!`** on every reader wake/select event.
-- **`HITS` Counter:** Increments in real time whenever `regInterruptTarget (0x1D)` detects an external reader waking (`WUA`) or selecting (`SDDC`) your emulated card.
+- **`HITS` Counter:** Increments in real time whenever `regInterruptTarget (0x1D)` detects an external reader waking (`WUA` / `WUF`) or selecting (`SDDC`) your emulated card.
 - **Quick Presets:**
-  - **`5` (`RND`)**: Generates a fresh random UID (preserving the NXP `0x04` manufacturer prefix for 7-byte UIDs).
-  - **`6` (`4B/7B`)**: Toggles instantaneously between a **4-byte MIFARE Classic 1K** profile (`DE AD BE EF`, `ATQA 04 00`, `SAK 08`) and a **7-byte NTAG215** profile (`04 A1 B2 C3 D4 E5 F6`, `ATQA 44 00`, `SAK 00`).
+  - **`5` (`RND`)**: Generates a fresh random UID/IDm (preserving NXP `0x04` for 7B NTAG and `0x01` for 8B FeliCa IDm).
+  - **`6` (`TYPE`)**: Cycles instantaneously between **7-byte NTAG215** (`NFC-A`), **4-byte MIFARE Classic 1K** (`NFC-A`), and **8-byte FeliCa** (`NFC-F`, `IDm` + `PMm` + `SYS 88 B4`).
   - **`7` (`RST`)**: Resets the `HITS` counter to `0`.
 
 > [!NOTE]
