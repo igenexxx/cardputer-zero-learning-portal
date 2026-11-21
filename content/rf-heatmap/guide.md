@@ -44,6 +44,9 @@ The **HEATMAP** tab sweeps up to **36 frequency bins** across the selected ISM b
   - **Cyan frame** highlights the active cursor bin.
 - **Thermal Waterfall (bottom chart)**:
   - Scrolls 56 rows of history downward using an Inferno thermal palette: **Deep Navy (`-110 dBm`) → Purple → Orange → Bright Yellow (`-35 dBm`)**.
+- **Room Baseline & EMI Spectrum Diff (`B` / `D`)**:
+  - Press **`B`** in `HEATMAP` to capture the current room sweep into `~/.config/rf-heatmap/baselines/room_live.json` (`0600` atomic write) using Welford per-bin mean, standard deviation, and peak RSSI.
+  - Press **`D`** to toggle **EMI DIFF** mode (a red **`DIFF`** badge replaces `LOCK` in the header). Bins rising `≥ +8 dB` or `Z ≥ 3.5` above the stored baseline highlight in **red** (`new_emitter`); bins rising `≥ +4 dB` or `Z ≥ 2.0` highlight in **amber** (`elevated`).
 - **Bottom Nav Bar (`4..8`)**: `4 HOLD/RUN` · `5 BAND` · `6 LOCK` · `7 MOD` · `8 MODE`.
 
 ### 2. PULSE — RSSI Oscilloscope & RAW Capture
@@ -216,6 +219,7 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/rf-heatmap --mcp
 | --- | --- |
 | `rf_get_status` | CC1101 chip identity (`0x00`/`0x14`), settings, bands, presets |
 | `rf_sweep_band` | Multi-sweep ISM band scan with `rfml.BinBaseline` noise floor & anomaly bursts |
+| `rf_save_room_baseline` / `rf_list_room_baselines` / `rf_diff_room_baseline` / `rf_delete_room_baseline` | Capture persistent Welford room baselines (`~/.config/rf-heatmap/baselines/`), run EMI spectrum diff (`normal`/`elevated`/`new_emitter`), and delete with `confirm: true` |
 | `rf_read_rssi` | Live single-channel RSSI sampling with Smart Squelch stats |
 | `rf_measure_freq_offset` | Read CC1101 `FREQEST (0x32)` carrier drift (Hz/ppm), RSSI, and `LQI (0x33)` / `CRC_OK` |
 | `rf_set_tx_power` | Set band-calibrated `PATABLE` TX power (`-30, -20, -10, 0, +5, +10 dBm`) and persist to `config.json` |
