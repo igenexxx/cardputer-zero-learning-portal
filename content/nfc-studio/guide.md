@@ -261,3 +261,15 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/nfc-studio --mcp
 | `nfc_dict_scan` | Known-key MIFARE Classic 1K/4K dictionary scan (built-in + `~/.config/nfc-studio/mf_keys.dict`, optional `.nfc` v4 export) |
 | `nfc_inspect_emv` | Strictly read-only ISO-DEP/EMV inspector (`RATS` + `SELECT PPSE` + `READ RECORD`) with mandatory PAN masking |
 | `nfc_scan_multiprotocol` | Sequential ST25R3916 discovery across NFC-A, NFC-B (`SENSB_REQ`), NFC-F/FeliCa (`SENSF_REQ`), and NFC-V/ISO 15693 (`INVENTORY`) |
+| `nfc_inductive_sense` | Calibrated ST25R3916 inductive metal detector (`AIR`/`FERROUS`/`NON-FERROUS`/`RESONANT-TAG`) and contactless dielectric moisture sensor (`DRY`/`DAMP`/`WET`, `0–100%`) |
+| `nfc_epaper_push` | Render a 1-bit monochrome 5×7 text badge (`2.13"`, `2.90"`, `1.54"`) and program a battery-free Waveshare NFC e-Paper display via ISO-DEP `0xCD` APDUs (`confirm_rf: true`) |
+
+---
+
+## Creative ST25R3916 Physical Sensing & NFC e-Paper
+
+Beyond standard RFID/NFC tags, `nfc-studio` unlocks the ST25R3916's analog amplitude/phase ADC (`0xD3`/`0xD5`) and energy-harvesting ISO-DEP frontend:
+
+1. **Inductive Metal Detector & Material Classifier (`nfc_inductive_sense`, `mode: "metal"`):** Calibrate in free air (`calibrate: true`), then sweep near unknown objects. Ferrous metals (`+L` high permeability) shift antenna phase positively with amplitude loading, non-ferrous metals (`-L` eddy currents in Cu/Al) shift phase negatively, and resonant 13.56 MHz tags absorb real power near zero phase shift.
+2. **Contactless Water Level / Dielectric Moisture Sensor (`nfc_inductive_sense`, `mode: "moisture"`):** Calibrate against an empty plastic/glass container or dry soil (`calibrate: true`), then detect water (`ε_r ≈ 80`) through non-metallic walls as `DRY` (`< 20%`), `DAMP` (`20–59%`), or `WET` (`>= 60%`).
+3. **Battery-Free Waveshare NFC e-Paper Programmer (`nfc_epaper_push`):** Powers Waveshare `2.13"` (250×122), `2.90"` (296×128), or `1.54"` (200×200) NFC e-Ink displays directly from the ST25R3916 carrier, renders a framed 1-bit text badge, and transmits the `0xCD` APDU upload and refresh sequence (`confirm_rf: true`, supports `sim_mode: true` dry runs).

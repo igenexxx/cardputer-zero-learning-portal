@@ -208,3 +208,23 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/ir-studio --mcp
 | `ir_import_pronto` / `ir_export_pronto` | Lossless Pronto Hex (`0000 006D ...`) import (optional path-sandboxed `save_as`) and export from any button or pulse train |
 | `ir_modem_send` / `ir_modem_recv` | 38 kHz IR optical data modem (`<= 64 B` payload + CRC-8-CCITT, `±120 µs` jitter tolerant; send requires **`confirm_ir: true`**) |
 | `ir_tripwire_probe` | Bounded 38 kHz reflective/beam-break optical tripwire probe (`1..10` pings, **`confirm_ir: true`**, `SIM` fallback) |
+| `ir_measure_flicker` | RX-only LED/screen PWM flicker meter (`window_ms: 200..5000`, TX strictly off, IEEE 1789 `SAFE`/`LOW_RISK`/`HIGH_FLICKER`/`NO_FLICKER`) |
+| `ir_measure_rpm` | 38 kHz optical IR RPM tachometer (`confirm_ir: true`, `blades: 1..12`, `window_ms: 200..5000`, median outlier rejection & `38 kHz / 33%` restore) |
+
+---
+
+## Optical Lab: PWM Flicker Meter & 940 nm RPM Tachometer
+
+CardputerZero's paired `/dev/lirc0` (940 nm IR LED) and `/dev/lirc1` (38 kHz IR receiver) unlock two non-contact optical instruments available via MCP (`ir_measure_flicker` and `ir_measure_rpm`) and Go APIs (`lirc.MeasureFlicker` / `lirc.MeasureRPM`):
+
+- **LED / Screen PWM Flicker Meter (`ir_measure_flicker`):** Keeps the IR emitter strictly off while sampling `/dev/lirc1` (`200..5000 ms`) to measure dominant PWM frequency (`Hz`), duty cycle (`%`), jitter (`%`), and **IEEE 1789-2015** eye-safety risk (`SAFE` `>= 3125 Hz`, `LOW_RISK` `1250..3125 Hz`, `HIGH_FLICKER` `< 1250 Hz`, or `NO_FLICKER`).
+- **Optical IR RPM Tachometer (`ir_measure_rpm`):** Emits bounded 38 kHz probe bursts (`confirm_ir: true`), measures reflected blade-pass periodicity with a median-filtered outlier rejector, divides by `blades` (`1..12`) to compute `RPM = (BladeFreqHz * 60) / blades`, and unconditionally restores `38 kHz / 33%`.
+
+### 940 nm Optical Tachometer Target Tips
+
+- **Dark / black surfaces (fans, pulleys, dark plastic):** Apply a small strip of **aluminum foil or metallic tape** (`> 85%` reflectance at 940 nm — strongest signal), or use a white electrical/masking tape strip or correction-fluid dot.
+- **Shiny metal shafts (spindles, motor axles):** Wrap the shaft with **matte black electrical or cloth tape**, leaving one narrow bare-metal strip exposed (or place a foil strip on top of the matte black wrap) to maximize optical contrast.
+- **Fans (PC coolers / 3D printer cooling fans):** Often no marker is needed — the fan blades themselves chop and reflect the 38 kHz beam; simply set `blades` to the exact blade count (e.g., `5`, `7`, or `9`).
+
+> [!TIP]
+> **940 nm IR Gotcha:** Ordinary black permanent markers are often nearly transparent at 940 nm infrared! Always use **matte black electrical tape** instead of marker ink when darkening bright shafts for optical RPM measurements.
