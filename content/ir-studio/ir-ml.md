@@ -1,10 +1,15 @@
-# On-Device IR ML: Denoiser, Classifier & Fingerprint
+# On-Device IR ML: `PulseNet-IR` (24 Protocols), Denoiser & 32D Fingerprint
 
-`ir-studio` embeds a **pure-Go, zero-dependency, zero-allocation** machine learning engine (`internal/irml/`) tailored to 38 kHz Infrared physics on the CardputerZero (ARM Cortex-A53, `CGO_ENABLED=0`). Every hot-path function runs in microseconds using stack-allocated fixed arrays (`[12]float32`, `[8]float32`) and caller-owned scratch slices (`0 B/op, 0 allocs/op`).
+`ir-studio` embeds a **pure-Go, zero-dependency, zero-allocation** neural & DSP engine (`internal/irml/`) tailored to 38 kHz Infrared physics on CardputerZero (ARM Cortex-A53, `CGO_ENABLED=0`). Alongside the deterministic 1D K-Means clusterer and ambient monitor, `ir-studio` ships **`PulseNet-IR`** — a **71.8 KB INT8 `.czml v1`** multi-task 1D-CNN trained on **8,907 real Flipper `.ir` remotes** (`16.6 ms/op`, `0 B/op`, `0 allocs/op` on Cortex-A53, bit-exact to `5.07e-07` against Python A100 reference).
+
+- **24-Class Protocol Classifier**: Recognizes `NEC`, `NECext`, `NEC42`, `Samsung32`, `SIRC/15/20`, `RC5/RC5X`, `RC6`, `Kaseikyo`, `Pioneer`, `JVC`, `Sharp`, `LG_AC`, `Daikin_AC`, `Gree_AC`, `Midea_AC`, `Mitsubishi_AC`, `Samsung_AC`, `Panasonic_AC`, `Generic_TV`, `Generic_AC`, and `Sunlight_EMI_Noise` (**98.47%** 3-class coarse accuracy, **89.46%** 24-class fine accuracy on strictly unseen remote files, **ECE = 0.0090**).
+- **32D SupCon IR Fingerprinting**: Head B produces L2-normalized `[32]float32` embeddings (**94.4% Recall@1** clean / **90.9%** noisy) for single-button `Flipper-IRDB` model recovery and Smart Probe Ranking (`R`).
+- **Lazy 1D-UNet TSOP AGC Denoiser (`PN-CLEAN`)**: Runs automatically if strict decoding and 1D K-Means (`ML-CLEAN`) fail, undoing asymmetric TSOP38238 mark-stretching (`+100..150 µs` marks / `-100..150 µs` spaces) while preserving strict `+mark / -space` alternation.
+- **Custom Override**: Place a verified `.czml` at `~/.config/ir-studio/models/pulsenet_ir.czml` and inspect provenance via MCP `ir_model_info`.
 
 ---
 
-## 1. 1D K-Means IR Pulse Denoiser (`ML-CLEAN`)
+## 1. 1D K-Means (`ML-CLEAN`) & Neural 1D-UNet (`PN-CLEAN`) Pulse Denoisers
 
 Real-world IR receivers (TSOP38238 / VS1838B) introduce two systematic artifacts:
 1. **AGC Pulse Stretching (`±80..150 µs`):** Strong nearby remotes widen marks and shrink spaces (or vice versa), pushing timings outside strict decoder windows.

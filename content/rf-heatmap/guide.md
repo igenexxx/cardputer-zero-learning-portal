@@ -236,18 +236,23 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/rf-heatmap --mcp
 | `rf_list_databases` / `rf_promote_to_user` | List separated `UserLibrary` and external `DatabasePack`s; copy winning external `.sub` to `captures/` |
 | `rf_transmit_saved` | Encode and transmit a `.sub` signal via CC1101 GDO0 (requires `confirm_rf: true`) |
 | `rf_list_sources` / `rf_add_source` / `rf_remove_source` / `rf_sync_sources` | Manage remote GitHub/manifest `.sub` sources (`sources.json`) and run incremental ETag/SHA delta sync into `~/rf-heatmap/databases/<id>/` |
+| `rf_analyze_pulses` | Run 1D K-Means (`ML-CLEAN`) & lazy `PulseNet-RF` 1D-UNet (`PN-CLEAN`) denoiser |
+| `rf_classify_signal` | Run `PulseNet-RF` INT8 1D-CNN (`28` fine protocols + `5` coarse classes, calibrated confidence) |
+| `rf_classify_spectrum` | Run `SpectrumNet-2D` INT8 2D-CNN on a `32×36` waterfall matrix (`Quiet`, `OOK`, `Beacon`, `EMI`, `FHSS`, `LoRa`, `CW_Jammer`, `RollJam_Suspect`) |
+| `rf_model_info` | Inspect active embedded/override `.czml` models (`version`, `sha256`, `byte_size`, class labels, `~/.config/rf-heatmap/models/`) |
+| `rf_match_fingerprint` | 32D SupCon `PulseNet-RF` cosine k-NN match against saved `.sub` captures (`±2.5 MHz` gate) |
 | `rf_save_capture` / `rf_delete_saved` | Save or delete `.sub` captures (`delete` requires `confirm: true`) |
-| `rf_purge_noise` | Scan captures for MLP-classified Noise `.sub` files (`dry_run: true` default; delete requires `dry_run: false, confirm: true`) |
+| `rf_purge_noise` | Scan captures for `PulseNet-RF`-classified Noise `.sub` files (`dry_run: true` default; delete requires `dry_run: false, confirm: true`) |
 
-### Automatic 1D K-Means Glitch Denoising (`DECODE` & `rf_analyze_pulses`)
-- When a weak or jittery capture fails strict OOK ratio checks, `rf-heatmap` automatically runs **1D K-Means pulse clustering** (`internal/rfml/cluster.go`) to merge `< 60 µs` EMI glitches, estimate `TE`, and quantize pulses to centroids.
-- Recovered frames display a magenta **`ML-CLEAN`** badge in `DECODE`; unrecognized signals show their discovered `ModulationHint`, `TE`, `LONG`, `JIT%`, and merged glitch count.
-- Exposed via MCP as **`rf_analyze_pulses`** (and `denoised: true` in `rf_decode_ook`). See [ML: 1D K-Means Pulse Denoiser](#/rf-ml-cluster).
+### Automatic 3-Pass Glitch & AGC Denoising (`DECODE`, `ML-CLEAN` & `PN-CLEAN`)
+- When a weak or jittery capture fails strict OOK ratio checks (Pass 1), `rf-heatmap` automatically runs **1D K-Means pulse clustering** (`ML-CLEAN`, Pass 2) to merge `< 60 µs` EMI glitches and quantize timings.
+- If CC1101 AGC pulse stretching (`+120 µs` mark / `-120 µs` space) still defeats Pass 2, `rf-heatmap` lazily invokes **`PulseNet-RF`'s 1D-UNet neural denoiser (`PN-CLEAN`, Pass 3)** to correct asymmetric duration distortion and recover the decoded protocol.
+- Exposed via MCP as **`rf_analyze_pulses`** and **`rf_decode_ook`**. See [ML: 1D K-Means Pulse Denoiser](#/rf-ml-cluster).
 
-### On-Device Signal Classifier & Smart Save Guard (`rf_classify_signal`)
-- Stopping `REC` in `PULSE` automatically runs the **12→24→5 pure-Go MLP** (`internal/rfml/classifier.go`) to label unknown captures (`Fixed OOK`, `Rolling/KeyFob`, `Sensor/Weather`, `CW/Jammer`, or `Noise`) with Softmax confidence.
-- **Smart Save Guard**: high-confidence `Noise (>= 85%)` warns before saving (`6 again to save` forces save within 3s).
-- Exposed via MCP as **`rf_classify_signal`**. See [ML: 12->24->5 Signal Classifier](#/rf-ml-classify).
+### On-Device Neural Suite: `PulseNet-RF` & `SpectrumNet-2D` (`rf_classify_signal`, `rf_classify_spectrum`, `rf_model_info`)
+- **HEATMAP Scene Badges (`SpectrumNet-2D`)**: Every 4th sweep, a 17.5 KB INT8 2D-CNN (`5.4 ms/op`, `0 allocs/op` on Cortex-A53) scans the live `32×36` waterfall and highlights anomalies in the top-right corner (`ROLLJAM!`, `CW JAM!`, `FHSS`, `LORA`, `EMI`, `BEACON`, `OOK`).
+- **28-Protocol Classifier & Smart Save Guard (`PulseNet-RF`)**: Stopping `REC` in `PULSE` or capturing in `DECODE` runs the 72.6 KB INT8 1D-CNN (`16.6 ms/op`, `0 allocs/op`) to predict both the **28-class protocol family** (e.g., `KeeLoq_HCS301`, `Somfy_Telis_RTS`, `Oregon_Weather`, `TPMS_Sensor`) and 5 coarse classes. High-confidence `Noise (>= 75%)` warns before saving (`6 again to save` forces save within 3s).
+- **Custom Model Override**: Drop a custom SHA-256-signed `.czml` file into `~/.config/rf-heatmap/models/pulsenet_rf.czml` or `spectrumnet.czml` to upgrade weights without recompiling; corrupt or mismatched files automatically fall back to the compiled-in models. See [ML: PulseNet-RF & SpectrumNet-2D](#/rf-ml-classify).
 
 ### On-Device RF Fingerprinting (`rf_match_fingerprint`)
 - On startup and whenever you press **`7 (SYNC)`** in `SAVED`, `rf-heatmap` indexes all `.sub` files (`RAW` and `Key`) as 8D L2-normalized RF embeddings in RAM.

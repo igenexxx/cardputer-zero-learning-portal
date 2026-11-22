@@ -321,3 +321,40 @@ An `ir-studio` UX safeguard powered by the `12→24→3` IR MLP classifier: when
 
 ### Smart AC State-Frame Controller
 `ir-studio`'s interactive parametric HVAC controller (`internal/irfile/ac_state.go`, `REMOTE → AC`, `ir_send_ac_state`) that synthesizes complete, checksummed IR state frames (`SUM8`, 4-bit nibble sum, or byte-complement pairs) on the fly for `Gree`, `Midea`, `Daikin`, `LG_AC`, `Samsung_AC`, and `Mitsubishi` mini-split units and saves any state as a standard Flipper `.ir` button.
+
+---
+
+## Pure-Go On-Device Neural Suite (`.czml v1`)
+
+### CZML (CardputerZero ML Binary v1)
+A compact, zero-dependency little-endian binary neural model format (`CZML` magic, 64-byte header with `DomainID`, `ModelVersion`, `Flags`, payload length `<= 2 MiB`, SHA-256 integrity digest, calibrated Softmax temperatures `TempFine`/`TempCoarse`, UTF-8 label table, and per-output-channel symmetric `int8` weights with folded BatchNorm `float32` scales and biases). Embedded directly via `//go:embed` with optional verified user overrides in `~/.config/<app>/models/*.czml`.
+
+### PulseNet (`PulseNet-RF` & `PulseNet-IR`)
+A multi-task Pure-Go INT8 Depthwise-Separable 1D-TCN (`~72 KB`, `67K` parameters, `16.6 ms/op`, `0 allocs/op` on Cortex-A53) trained offline via Teacher→Student Knowledge Distillation and QAT on 11,471 real Flipper `.sub` and 8,907 real Flipper `.ir` captures. Predicts fine protocol families (28 RF / 24 IR), coarse classes, 32D SupCon embeddings, and runs a lazy 1D-UNet asymmetric AGC denoiser (`PN-CLEAN`).
+
+### SpectrumNet-2D
+A 17.5 KB INT8 Depthwise-Separable 2D-CNN (`5.38 ms/op`, `0 allocs/op` on Cortex-A53) embedded in `rf-heatmap` that inspects `32×36` thermal waterfall spectrograms to classify 8 RF scenes (`Quiet`, `Narrowband_OOK`, `Periodic_Beacon`, `Wideband_EMI_SMPS`, `FHSS_Hopper`, `LoRa_Chirp`, `CW_Jammer`, `RollJam_Suspect`) and render live LCD warning pills.
+
+### NFC-InductiveNet
+A 13.6 KB INT8 1D-CNN (`1.05 ms/op`, `0 allocs/op` on Cortex-A53) embedded in `nfc-studio` that classifies 32-sample ST25R3916 `(ΔAmp, ΔPhase, dA/dt, dP/dt)` approach trajectories across 7 materials (`AIR`, `FERROUS_STEEL`, `ALUMINUM`, `COPPER_BRASS`, `RESONANT_TAG`, `PHONE_ACTIVE`, `WATER_DIELECTRIC`) and estimates continuous dielectric moisture percentage (`0–100%`).
+
+### NFC-DumpNet
+A 24.7 KB INT8 quantized MLP (`0.29 ms/op` on Cortex-A53) embedded in `nfc-studio` that maps 48 structural, header, nibble-histogram, and page-entropy features of any `.nfc` dump into 10 card ecosystems (`Blank`, `NDEF_URI_Text`, `NDEF_WiFi_vCard`, `Transit_Card`, `Access_MIFARE`, `Hotel_Key`, `Gaming_Amiibo`, `EMV_Payment`, `DESFire_App`, `Encrypted_Proprietary`) plus an L2-normalized 32D SupCon tag fingerprint.
+
+### Timeline-Seq
+A 21.2 KB INT8 dilated 1D-TCN (`4.53 ms/op`, `0 allocs/op` on Cortex-A53) embedded in `radio-bridge` (`--timeline --ml-score` / `--correlate --ml-score`) that scores up to 32 simultaneous multi-modal `RF + NFC + IR` events into 7 scenarios (`Normal_Idle`, `SmartHome_Chain`, `Access_Unlock_Flow`, `Replay_Suspect`, `RollJam_Suspect`, `Probe_BruteForce`, `RF_Jamming_Event`) with a calibrated causal confidence score.
+
+### Knowledge Distillation (KD)
+A model compression technique where a large FP32 Teacher network (`ResTCN-Transformer`) transfers its soft probability distribution (`KL divergence` at temperature $\tau$) to a compact Student network (`PulseNet`), preserving accuracy under tight ARM Cortex-A53 RAM and latency budgets.
+
+### QAT (Quantization-Aware Training)
+Simulating symmetric INT8 weight and dynamic activation rounding inside the forward pass (via Straight-Through Estimators) during the final GPU epochs so the model adapts to `int8` discretization error prior to `.czml` export.
+
+### SupCon (Supervised Contrastive Learning)
+A metric-learning loss that pulls normalized 32D embeddings of captures from the same protocol/device family together on the unit hypersphere $S^{31}$ while pushing different families apart, powering cross-format RF, IR, and NFC k-NN fingerprinting.
+
+### Temperature Scaling
+A single-parameter post-training calibration step dividing logits by an optimized scalar $T > 0$ (minimizing validation NLL) so Softmax confidences accurately reflect true empirical accuracy (low Expected Calibration Error, e.g., `ECE = 0.0012` for `PulseNet-RF`).
+
+### RollJam Attack
+A two-stage rolling-code interception technique where a narrowband jammer blocks a receiver on an adjacent frequency bin while capturing a vehicle/gate keyfob's rolling transmission, then replays the first code while hoarding the second. Detected across both 2D spectrum waterfalls (`SpectrumNet-2D`) and multi-modal timelines (`Timeline-Seq`).

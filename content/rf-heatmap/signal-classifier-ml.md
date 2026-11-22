@@ -1,14 +1,31 @@
-# ML Deep Dive: On-Device Signal Type Classifier (Tiny MLP)
+# ML Deep Dive: `PulseNet-RF` (28 Protocols) & `SpectrumNet-2D`
 
-Hardcoded protocol decoders only recognize a handful of fixed-code remotes (`Princeton`, `CAME`, `Linear`). When an unknown 433/868 MHz transmission hits the antenna — a KeeLoq car keyfob, a weather station, a continuous interferer, or random atmospheric noise — `rf-heatmap` classifies it on-device using a **pure-Go 2-layer Multi-Layer Perceptron (`12 → 24 ReLU → 5 Softmax`)**.
+Hardcoded protocol decoders only recognize a handful of fixed-code remotes (`Princeton`, `CAME`, `Linear`). When an unknown 315/433/868/915 MHz transmission hits the CC1101 antenna — a KeeLoq/StarLine/FAAC rolling keyfob, an Oregon/Acurite weather station, a TPMS tire sensor, a POCSAG pager, a continuous jammer, or a RollJam attack — `rf-heatmap` classifies it on-device using two **pure-Go, zero-allocation INT8 neural networks** packaged in the SHA-256-verified **`.czml v1`** binary format (`CGO_ENABLED=0`, zero Python/ONNX/TFLite runtimes).
 
-- **Model footprint**: 437 `float32` parameters (**~1.75 KB** embedded in `internal/rfml/model_weights.go`)
-- **Inference speed**: **~255 ns/op** (`0 B/op`, `0 allocs/op`) on Go 1.27 with full stack-array bounds-check elimination
-- **Offline training**: Reproducible zero-dependency Python 3 trainer (`rf-heatmap/scripts/train_rfml.py`, **99.8% validation accuracy**)
+| Model | File Size | Input Tensor | Outputs | Live Cortex-A53 @ 1.0 GHz |
+| :--- | :---: | :--- | :--- | :---: |
+| **`PulseNet-RF`** | **72.6 KB** (`74,377 B`) | `[3, 256]` pulses + `[6]` metadata | 28 fine protocols, 5 coarse classes, 32D SupCon embedding, 1D-UNet AGC denoiser | **16.6 ms/op** (`0 allocs/op`) |
+| **`SpectrumNet-2D`** | **17.5 KB** (`17,930 B`) | `[2, 32, 36]` RSSI + delta waterfall | 8 RF scenes (`Quiet`, `Narrowband_OOK`, `Periodic_Beacon`, `Wideband_EMI_SMPS`, `FHSS_Hopper`, `LoRa_Chirp`, `CW_Jammer`, `RollJam_Suspect`) | **5.4 ms/op** (`0 allocs/op`) |
+| Legacy `12→24→5` MLP | 1.75 KB | `[12]` K-Means summary | Fallback 5-class coarse classifier if `.czml` unavailable | **0.002 ms/op** (`0 allocs/op`) |
 
 ---
 
-## 1. Five Target Signal Classes
+## 1. `PulseNet-RF` Architecture & Offline GPU Training (`ml-lab/`)
+
+`PulseNet-RF` is a multi-task **Depthwise-Separable Temporal Convolutional Network (DS-TCN)** trained on an NVIDIA A100 GPU over **11,471 real-world Flipper `.sub` captures** (strictly group-split by remote directory/stem to guarantee zero train/test leakage):
+
+- **Input Representation (`[3, 256]`)**: Each non-zero signed pulse duration `p` (`+mark` / `-space` in `µs`) becomes 3 channels: `sign(p) ∈ {-1, +1}`, `log1p(|p|) / log1p(100000)`, and clipped temporal derivative `Δlog × 3`, concatenated after Global Avg+Max Pooling with 6 metadata priors (`band`, `is_fsk`, `snr`, `log_len`, `duty`, `glitch_rate`).
+- **Teacher → Student Knowledge Distillation + QAT**: A 400K-parameter FP32 Teacher (`ResTCN-Transformer`) distills dark knowledge into a **67,555-parameter Student** fine-tuned with **Quantization-Aware Training (QAT)** using dynamic per-tensor symmetric INT8 activations and per-channel INT8 weights with folded BatchNorm (`int32` MACs).
+- **Temperature Calibration & Bit-Exact Parity**: Post-training L-BFGS temperature scaling yields **ECE = 0.0012** on clean captures (**98.11%** 28-class accuracy / **99.46%** 5-class accuracy) and **96.97%** under heavy clock drift, asymmetric AGC stretching, and EMI glitch injection. Pure-Go inference matches the Python INT8 reference to **`5.22e-07` max abs diff** across all 64 golden vectors on both `x86_64` and `arm64`.
+- **Lazy 1D-UNet AGC Denoiser (`PN-CLEAN`)**: Only invoked when Pass 1 (strict OOK) and Pass 2 (1D K-Means `ML-CLEAN`) fail to decode, correcting asymmetric mark-stretch / space-shrink distortion while preserving strict `+/-` sign alternation.
+
+## 2. `SpectrumNet-2D` Waterfall Scene & RollJam Detector
+
+Every 4th sweep in `HEATMAP`, `rf-heatmap` feeds the last `32` waterfall rows × `36` frequency bins (absolute normalized dBm + delta above per-bin Welford baseline) into a 9-layer INT8 Depthwise-Separable 2D-CNN (**99.89%** test accuracy). When `RollJam_Suspect` (adjacent narrowband jammer + interleaved keyfob bursts) or `CW_Jammer` triggers with confidence `>= 65%`, a red **`ROLLJAM!`** or **`CW JAM!`** alert pill appears on the top-right of the waterfall.
+
+---
+
+## 3. Five Coarse Signal Classes & 28 Fine Protocol Families
 
 | Class | Typical Real-World Sources | Distinguishing RF Signature |
 | --- | --- | --- |

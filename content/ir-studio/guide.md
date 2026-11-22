@@ -194,10 +194,11 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/ir-studio --mcp
 | `ir_send_ac_state` | Encode & transmit a checksummed parametric AC state frame (`Gree`, `Midea`, `Daikin`, `LG_AC`, `Samsung_AC`, `Mitsubishi`, **`confirm_ir: true`**, optional `save_as`) |
 | `ir_sweep_carrier` | Resend a signal or pulse train across `[36000, 38000, 40000, 56000]` Hz (**`confirm_ir: true`**, guaranteed `38 kHz / 33%` restore) |
 | `ir_run_macro` / `ir_list_macros` | List or run multi-device IR macros (**`confirm_ir: true`**, `<= 30 s` cap) |
-| `ir_analyze_pulses` | Run 1D K-Means denoiser (`short_us`, `long_us`, `sync_us`, `glitches_removed`) |
-| `ir_classify_signal` | Run `12→24→3` MLP (`TV/Remote`, `AC State-Frame`, `Ambient Noise`) |
-| `ir_match_fingerprint` | 8D L2-normalized k-NN match across installed packs (`±4 kHz` carrier-gated) |
-| `ir_rank_probe_pack` | Rank a `PROBE` pack descending by cosine similarity to a reference capture |
+| `ir_analyze_pulses` | Run 1D K-Means (`ML-CLEAN`) + lazy `PulseNet-IR` 1D-UNet TSOP AGC denoiser (`PN-CLEAN`) |
+| `ir_classify_signal` | Run `PulseNet-IR` INT8 1D-CNN (24 IR brand/protocol families + `TV/Remote`, `AC State-Frame`, `Ambient Noise`) |
+| `ir_match_fingerprint` | 32D L2-normalized SupCon k-NN match across installed packs (`±4 kHz` carrier-gated) |
+| `ir_rank_probe_pack` | Rank a `PROBE` pack descending by 32D cosine similarity to a reference capture |
+| `ir_model_info` | Inspect active embedded/override `PulseNet-IR` `.czml` model (`version`, `sha256`, `byte_size`, 24 classes, `~/.config/ir-studio/models/`) |
 | `ir_purge_noise` | Scan/purge noise-only User Library `.ir` files (`dry_run: true` default; `confirm: true` to delete) |
 | `ir_list_remotes` / `ir_read_remote` | Inspect User Library or read-only pack `.ir` files (`1 MiB` cap, path-sandboxed) |
 | `ir_save_remote` / `ir_delete_remote` | Save or delete User Library `.ir` files (`delete` requires **`confirm: true`**) |

@@ -27,7 +27,7 @@ const TEMPLATE = `
     <div class="widget-header">
       <div class="widget-title-group">
         <span class="widget-badge">Interactive ML Lab</span>
-        <h3 class="widget-title">On-Device Signal Type Classifier (12→24→5 MLP)</h3>
+        <h3 class="widget-title">On-Device PulseNet-RF (28 Protocols + 5 Coarse Classes)</h3>
       </div>
       <span class="status-pill ok" data-role="cls-pill">Fixed OOK</span>
     </div>
@@ -65,6 +65,7 @@ const TEMPLATE = `
           <input type="range" min="0" max="70" step="1" value="1" data-s="glitch">
         </div>
       </div>
+      <div class="widget-subpanel" data-role="pulsenet-meta" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-family:var(--font-mono);font-size:0.8rem;"></div>
       <div class="widget-subpanel" data-role="prob-bars"></div>
     </div>
   </div>
@@ -118,15 +119,34 @@ function buildProbBarsHtml(probs, bestIdx) {
   }).join("");
 }
 
+function inferFineProtocol(bestIdx, s) {
+  if (bestIdx === 0) {
+    if (s.frameLen <= 30) return "CAME_12";
+    return s.te <= 420 ? "Princeton" : "Nice_FLO";
+  }
+  if (bestIdx === 1) return s.te >= 550 ? "Somfy_Telis_RTS" : "KeeLoq_HCS301";
+  if (bestIdx === 2) return s.te >= 650 ? "Oregon_Weather" : "TPMS_Sensor";
+  if (bestIdx === 3) return "CW_Jammer";
+  return "EMI_Atmospheric_Noise";
+}
+
 function renderClassification(ui, state) {
   const probs = scoreClasses(state);
   const bestIdx = findBestClassIndex(probs);
   const best = CLASSES[bestIdx];
   const pct = (probs[bestIdx] * 100).toFixed(1);
-  const guardNote = bestIdx === 4 && probs[bestIdx] >= 0.85 ? " · SAVE BLOCKED" : "";
+  const guardNote = bestIdx === 4 && probs[bestIdx] >= 0.75 ? " · SAVE BLOCKED" : "";
+  const fineProto = inferFineProtocol(bestIdx, state);
+  const denoiserMode = state.jitter >= 22 || state.glitch >= 15
+    ? "PN-CLEAN (1D-UNet AGC Rescue)"
+    : (state.jitter >= 10 ? "ML-CLEAN (1D K-Means)" : "Pass-1 Direct Decode");
 
   ui.pill.textContent = `${best.name} (${pct}%)${guardNote}`;
   ui.pill.className = `status-pill ${bestIdx === 4 ? "err" : "ok"}`;
+  ui.metaEl.innerHTML = `
+    <span>PulseNet-RF Fine: <strong style="color:${best.color};">${fineProto}</strong></span>
+    <span>Denoiser: <strong style="color:#e879f9;">${denoiserMode}</strong></span>
+    <span>Embed: <strong>32D SupCon INT8</strong></span>`;
   ui.barsEl.innerHTML = buildProbBarsHtml(probs, bestIdx);
 }
 
@@ -162,6 +182,7 @@ export function mountSignalClassifier(el) {
 
   const ui = {
     pill: el.querySelector('[data-role="cls-pill"]'),
+    metaEl: el.querySelector('[data-role="pulsenet-meta"]'),
     barsEl: el.querySelector('[data-role="prob-bars"]'),
   };
   const onRender = () => renderClassification(ui, state);

@@ -261,7 +261,10 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/nfc-studio --mcp
 | `nfc_dict_scan` | Known-key MIFARE Classic 1K/4K dictionary scan (built-in + `~/.config/nfc-studio/mf_keys.dict`, optional `.nfc` v4 export) |
 | `nfc_inspect_emv` | Strictly read-only ISO-DEP/EMV inspector (`RATS` + `SELECT PPSE` + `READ RECORD`) with mandatory PAN masking |
 | `nfc_scan_multiprotocol` | Sequential ST25R3916 discovery across NFC-A, NFC-B (`SENSB_REQ`), NFC-F/FeliCa (`SENSF_REQ`), and NFC-V/ISO 15693 (`INVENTORY`) |
-| `nfc_inductive_sense` | Calibrated ST25R3916 inductive metal detector (`AIR`/`FERROUS`/`NON-FERROUS`/`RESONANT-TAG`) and contactless dielectric moisture sensor (`DRY`/`DAMP`/`WET`, `0–100%`) |
+| `nfc_inductive_sense` | Calibrated ST25R3916 inductive metal detector & dielectric moisture sensor enhanced by **`NFC-InductiveNet`** (7 materials + neural moisture %) |
+| `nfc_analyze_tag` | Dump Shannon entropy profiler + **`NFC-DumpNet`** 10-ecosystem classifier (`Blank`, `NDEF_URI_Text`, `NDEF_WiFi_vCard`, `Transit_Card`, `Access_MIFARE`, `Hotel_Key`, `Gaming_Amiibo`, `EMV_Payment`, `DESFire_App`, `Encrypted_Proprietary`) & 32D embedding |
+| `nfc_match_fingerprint` | 32D learned SupCon k-NN similarity lookup across saved `.nfc` library |
+| `nfc_model_info` | Inspect active embedded/override `NFC-InductiveNet` & `NFC-DumpNet` `.czml` models (`version`, `sha256`, `~/.config/nfc-studio/models/`) |
 | `nfc_epaper_push` | Render a 1-bit monochrome 5×7 text badge (`2.13"`, `2.90"`, `1.54"`) and program a battery-free Waveshare NFC e-Paper display via ISO-DEP `0xCD` APDUs (`confirm_rf: true`) |
 
 ---

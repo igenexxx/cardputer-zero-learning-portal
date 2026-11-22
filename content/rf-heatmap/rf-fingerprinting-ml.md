@@ -1,34 +1,25 @@
-# ML Deep Dive: On-Device RF Fingerprinting (Cosine k-NN)
+# ML Deep Dive: On-Device 32D RF Fingerprinting (SupCon + Cosine k-NN)
 
-Even when a rolling-code keyfob (`KeeLoq`) encrypts a brand-new payload on every press, its **physical RF signature** stays remarkably consistent: carrier frequency, modulation family, base time element (`TE`), pulse ratio, sync gap, frame length, and duty cycle.
+Even when a rolling-code keyfob (`KeeLoq`, `Somfy RTS`, `StarLine`) encrypts a brand-new payload on every press, its **physical RF waveform signature** stays remarkably consistent: carrier band, modulation family, crystal/RC timing drift, preamble rhythm, pulse ratio, and frame geometry.
 
-`rf-heatmap` turns every saved `.sub` file (`RAW` or `Key`) into a compact **8D L2-normalized embedding** (`internal/rfml/fingerprint.go`) and matches incoming bursts in `< 15 µs` with **zero heap allocations**.
+`rf-heatmap` encodes every live capture or saved `.sub` file (`RAW` or `Key`) through **`PulseNet-RF` Head B** into an **L2-normalized 32D learned embedding** (`[32]float32`, trained with **Supervised Contrastive Loss (`SupCon`)** for **97.7% clean / 96.4% noisy Recall@1**) and matches incoming bursts with **zero heap allocations**.
 
 ---
 
-## 1. The 8D RF Embedding
+## 1. Learned 32D Hypersphere vs. Legacy 8D Handcrafted Features
 
-| Index | Feature | Why It Distinguishes Transmitters |
-| --- | --- | --- |
-| `0` | `BandNorm` | Separates 315, 433, 868, and 915 MHz hardware |
-| `1` | `ModType` | Separates OOK/AM (`0.25`) from 2-FSK/FM (`0.85`) |
-| `2` | `ShortUsNorm` | Exact crystal/RC `TE` varies slightly even between remotes of the same brand |
-| `3` | `LongUsNorm` | Long symbol pulse centroid |
-| `4` | `RatioNorm` | `1:3` (Princeton/Linear) vs `1:2` (CAME/KeeLoq) |
-| `5` | `LogSyncUs` | Inter-frame sync pause duration |
-| `6` | `FrameLenNorm` | Pulses per frame (20–52 fixed vs 120–170 rolling) |
-| `7` | `DutyCycle` | Carrier-on ratio across the burst |
+`PulseNet-RF` projects the 198D pooled temporal convolutional representation (Avg+Max over the dilated DS-TCN + 6 physical metadata priors) through a quantized linear projection and L2 normalization ($\hat{v} = v / \|v\|_2 \in S^{31}$). Because every vector lies on the 32D unit hypersphere, **Cosine Similarity** reduces to a 32-element dot product:
 
-Every vector is L2-normalized ($\hat{v} = v / \|v\|_2$) so **Cosine Similarity** reduces to a fast 8-element dot product:
+$$\text{sim}(a, b) = \sum_{i=0}^{31} \hat{a}_i \cdot \hat{b}_i \in [0, 1]$$
 
-$$\text{sim}(a, b) = \sum_{i=0}^{7} \hat{a}_i \cdot \hat{b}_i \in [0, 1]$$
+- **Why 32D SupCon outperforms 8D heuristics**: Handcrafted ratios collapse distinct protocols that share `TE ≈ 350–400 µs` (`Princeton`, `CAME`, `GateTX`, `KeeLoq`). Supervised Contrastive training pulls noisy jittered captures of the *same* remote together while pushing different protocol families to orthogonal hemispheres.
 
 ---
 
 ## 2. Frequency Gating & Cross-Format Matching
 
-- **±2.5 MHz Frequency Gate**: Candidates further than `2.5 MHz` from the live capture are skipped before cosine scoring, eliminating cross-band false matches.
-- **Cross-Format Matching**: `ComputeEmbeddingFromKey()` synthesizes a compatible 8D embedding for saved Flipper Key files (`Princeton`, `CAME`, `Linear`), so live `RAW` captures match both `RAW` and `Key` `.sub` files seamlessly.
+- **±2.5 MHz Frequency Gate**: Candidates further than `2.5 MHz` from the live capture are skipped before cosine scoring, eliminating cross-band false matches (`315 / 433 / 868 / 915 MHz`).
+- **Cross-Format Matching**: `ComputeEmbeddingFromKey()` synthesizes canonical alternating `µs` pulses from saved Flipper Key files (`Princeton`, `CAME`, `Nice`, `KeeLoq`, `Linear`) and encodes them through the **exact same `PulseNet-RF` backbone**, so live `RAW` captures match both `RAW` and `Key` `.sub` files in one shared 32D manifold.
 
 ---
 

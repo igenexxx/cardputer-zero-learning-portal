@@ -43,13 +43,13 @@
         },
         {
           "slug": "rf-ml-classify",
-          "title": "ML: 12->24->5 Signal Classifier",
+          "title": "ML: PulseNet-RF & SpectrumNet-2D",
           "file": "content/rf-heatmap/signal-classifier-ml.md",
           "badge": "ML"
         },
         {
           "slug": "rf-ml-fingerprint",
-          "title": "ML: RF Fingerprinting (k-NN)",
+          "title": "ML: 32D RF Fingerprinting (SupCon)",
           "file": "content/rf-heatmap/rf-fingerprinting-ml.md",
           "badge": "ML"
         },
@@ -77,7 +77,7 @@
         },
         {
           "slug": "nfc-ml",
-          "title": "ML: Dump Profiler, IAT & Field ADC",
+          "title": "ML: InductiveNet, DumpNet & Field ADC",
           "file": "content/nfc-studio/nfc-ml.md",
           "badge": "ML"
         }
@@ -99,7 +99,7 @@
         },
         {
           "slug": "ir-ml",
-          "title": "ML: Pulse Denoiser, Classifier & Fingerprint",
+          "title": "ML: PulseNet-IR, Denoiser & 32D FP",
           "file": "content/ir-studio/ir-ml.md",
           "badge": "ML"
         }
