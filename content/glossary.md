@@ -358,3 +358,6 @@ A single-parameter post-training calibration step dividing logits by an optimize
 
 ### RollJam Attack
 A two-stage rolling-code interception technique where a narrowband jammer blocks a receiver on an adjacent frequency bin while capturing a vehicle/gate keyfob's rolling transmission, then replays the first code while hoarding the second. Detected across both 2D spectrum waterfalls (`SpectrumNet-2D`) and multi-modal timelines (`Timeline-Seq`).
+
+### Simple Mode & Expert Mode (`expert_mode`)
+A progressive-disclosure UI pattern used in CardputerZero applications (`ir-studio`, persisted in `~/.config/<app>/config.json`). **Simple Mode** (`expert_mode: false`, default) presents a linear, task-oriented Home Menu (`Read & Replay`, `My Remotes`, `Universal Off`, `Smart AC`, `Settings`) with minimal clutter; **Expert Mode** (`expert_mode: true`, magenta `EXP` badge) unlocks full engineering tools such as live pulse oscilloscopes, bit-level protocol diffs, multi-device macros, and raw database browsers.

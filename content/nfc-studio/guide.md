@@ -25,14 +25,36 @@ The top status bar displays the active mode (`SCAN`, `DUMP`, `EMU`, `SAVED`), op
 
 | Badge | Color | Meaning |
 | :--- | :--- | :--- |
-| **`ST25R39`** | Emerald | Live ST25R3916 hardware initialized on `/dev/spidev0.2`. All scanning and Passive Target emulation run on real RF silicon. |
-| **`SIM`** | Amber | Simulator / Demo mode. Activated automatically if the Cap is absent or fails to initialize, or manually via `--sim`. Preloads a sample NTAG215 tag (`cardputer.cc`) so you can explore the UI offline. |
+| **`NFC-LAB` / `< SCREEN`** | Emerald | Home banner or clean breadcrumb screen title. |
+| **`SIMPLE` / `EXPERT` / `EXP`** | Gray / **Magenta** | Active UI mode (`expert_mode: false` default; toggle via `5 EXP-` on `HOME` or `Settings`). |
+| **`ST25R39`** | Emerald | Live ST25R3916 hardware initialized on `/dev/spidev0.2`. |
+| **`SIM`** | Amber | Simulator / Demo mode (`--sim` or Cap absent). Preloads a sample NTAG215 tag (`cardputer.cc`). |
 
 ---
 
-## The 4 Application Tabs
+## Linear Home Menu: Simple Mode & Expert Mode
 
-Use **`Tab`** or **`8`** (`MODE`) at any time to cycle through the four views: **`SCAN` → `DUMP` → `EMU` → `SAVED`**.
+`nfc-studio` launches into a clean **Home Menu (`HOME`)** with the 13.56 MHz RF field kept **idle** until you enter a scan or emulate screen (saving battery and avoiding coil heat), and predictable **`Esc` = Back** navigation (pressing `Esc` on `HOME` prompts `Exit NFC Studio? [Enter/Esc=YES]`; `Q` exits immediately):
+
+![NFC Studio Home Menu (Simple Mode)](assets/nfc-studio/home.png)
+
+- **Simple Mode (Default, 4 items — zero scrolling):**
+  1. **`Read & Clone`** — 2-step card reader (`Tap Card → Tag Read → 4 EMU / 5 SAVE / 6 AGAIN / 7 INFO`).
+  2. **`My Cards`** — Emulate (`4 EMU`), inspect NDEF/memory (`5 INFO`), scan new (`6 NEW`), or delete `.nfc` cards.
+  3. **`Emulate Card`** — Hardware 13.56 MHz Passive Target emulation (`Esc` stops emulation & turns RF OFF).
+  4. **`Settings`** — Expert Mode, Auto Scan, opt-in MCP Server (`SSH`), DB Sync.
+- **Expert Mode (`5 EXP-` on `HOME` or `Settings → Expert Mode`, persisted in `~/.config/nfc-studio/config.json`):** Unlocks `+3` engineering screens (**`NFC Radar Lab`**, **`Hex / NDEF Dump`**, **`Auto-Emu Probe`**), random UID (`RND`/`TYPE`), `[x]` multi-select, and `Manage DB Sources`.
+
+### 0. `Read & Clone` — 2-Step Tap, Save & Emulate
+
+![NFC Studio Read & Clone Captured Tag](assets/nfc-studio/read.png)
+
+1. **Step 1 (`TAP CARD OR TAG`):** Hold any ISO 14443-A/B, FeliCa, or ISO 15693 card near the Cap NFC coil. The moment a tag is read, `nfc-studio` auto-freezes on Step 2 and pauses the scanner.
+2. **Step 2 (`TAG READ!`):** Shows card type, `UID`, NDEF payload (URL/Text), and library match. Press **`Enter` / `4 EMU`** to emulate immediately, **`5 SAVE`** to save `.nfc` into `~/nfc-studio/tags/` and open `My Cards`, **`6 AGAIN`** to read another card, or **`7 INFO`** to inspect NDEF/Hex pages.
+
+---
+
+## Screen Details (Simple & Expert Modes)
 
 ### 1. `SCAN` — Live 13.56 MHz ISO 14443-A Discovery
 

@@ -12,18 +12,38 @@ Every screen shares a compact top status bar (`y = 0..17`) showing live radio st
 
 | Badge | Color | Meaning |
 | --- | --- | --- |
-| `RF-HEAT` | Cyan | Application identifier |
-| `HEATMAP` / `PULSE` / `DECODE` / `SAVED` / `PROBE` / `SET` | Cyan outline | Currently active mode tab |
-| `433.92M AM650` | White | Active tuned frequency (MHz) and modulation preset |
-| `ASQ` | **Green** (ON) / Gray (OFF) | **Auto Squelch** (on-device ML adaptive threshold). Toggle with `S`. |
-| `LOCK` | **Cyan** (ON) / Gray (OFF) | **Auto-Lock** (automatically snaps cursor to `z ≥ 4.0` bursts). Toggle with `L`. |
+| `RF-HEAT` / `< SCREEN` | Cyan | Home banner or breadcrumb screen title |
+| `SIMPLE` / `EXPERT` / `EXP` | Gray / **Magenta** | Active UI mode (`expert_mode: false` default; toggle via `5 EXP-` on `HOME` or `Settings`) |
+| `433.92M` | White | Active tuned frequency (MHz) on live RF screens |
+| `ASQ` / `DIFF` | **Green** / **Red** | Auto Squelch active or EMI Room Diff overlay active |
 | `CC1101` / `SIM` | **Green** (`CC1101`) / **Amber** (`SIM`) | Live SPI CC1101 hardware detected vs. built-in realistic RF simulator mode |
 
 ---
 
-## The 4 Modes (Tabs)
+## Linear Home Menu: Simple Mode & Expert Mode
 
-Switch between modes at any time using `Tab` or bottom key `8 (MODE)`.
+`rf-heatmap` launches directly into a clean **Home Menu (`HOME`)** with predictable **`Esc` = Back** navigation (pressing `Esc` on `HOME` prompts `Exit RF Heatmap? [Enter/Esc=YES]`; `Q` exits immediately):
+
+![RF Heatmap — Home Menu (Simple Mode)](assets/rf-heatmap/home.png)
+
+- **Simple Mode (Default, 5 items — zero scrolling):**
+  1. **`Read & Replay`** — 2-step Sub-GHz capture & instant test replay (`433.92 / 868.35 / 315 / 915 MHz`).
+  2. **`My Captures`** — Replay, trim (`5 TRIM`), capture new (`6 NEW`), or delete your `.sub` files.
+  3. **`Spectrum Map`** — Live thermal waterfall (`6 LOCK` jumps directly to `Read & Replay` on the peak frequency; `7 FOX` opens Foxhunt Geiger).
+  4. **`Sensors`** — Live TPMS (433/315 MHz) & Weather Station monitor.
+  5. **`Settings`** — Expert Mode, TX Power (`-30..+10 dBm`), opt-in MCP Server (`SSH`), DB Sync, Auto Squelch.
+- **Expert Mode (`5 EXP-` on `HOME` or `Settings → Expert Mode`, persisted in `~/.config/rf-heatmap/config.json`):** Unlocks `+4` engineering screens (**`Pulse Scope`**, **`OOK Decoder`**, **`Auto-Probe`**, **`Foxhunt Geiger`**), `Tab` mode cycling, `[x]` batch multi-select, `PURGE` noise cleanup, and all 9 hardware/ML settings.
+
+### 0. `Read & Replay` — 2-Step Capture & Instant Test
+
+![RF Heatmap — Read & Replay Captured Signal](assets/rf-heatmap/read.png)
+
+1. **Step 1 (`AUTO-CAPTURE: PRESS REMOTE`):** Automatically scans key ISM frequencies (`433.92 / 868.35 / 315.00 / 915.00 / 433.42 / 868.80 MHz`), locks onto any strong burst (`>= -72 dBm`), rejects noise via `PulseNet-RF`, and automatically freezes on Step 2! Press **`4 AUTO/FREQ`** to switch between `Auto-Scan` and a fixed frequency, **`5 MOD`** to change modulation, or **`6 REC`/`STOP`** for manual RAW capture.
+2. **Step 2 (`SIGNAL CAPTURED!`):** Press **`Enter` / `4 SEND`** to test replay immediately (rolling codes require 2-step confirmation), **`5 SAVE`** to save `.sub` into `~/rf-heatmap/captures/` and open `My Captures`, **`6 AGAIN`** to capture another button, or **`8 MENU` / `Esc`** to return to `HOME`.
+
+---
+
+## Screen Details (Simple & Expert Modes)
 
 ### 1. HEATMAP — Spectrum Analyzer & Thermal Waterfall
 

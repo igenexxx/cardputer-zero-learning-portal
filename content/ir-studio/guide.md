@@ -12,110 +12,114 @@ At startup, `ir-studio` scans `/dev/lirc0`..`/dev/lirc7` using pure-Go Linux `io
 | :--- | :--- | :--- |
 | **`LIRC`** | Emerald | Live `/dev/lirc*` transceiver ready (`LIRC_MODE_PULSE` TX + `LIRC_MODE_MODE2` RX). |
 | **`SIM`** | Amber | Deterministic offline simulator mode (`--sim` or no `/dev/lirc*` device). |
-| **`ML-CLEAN`** | Magenta | 1D K-Means Pulse Denoiser absorbed EMI glitches or quantized jitter to rescue a protocol decode. |
-| **`RANK`** | Magenta | `PROBE` pack is sorted descending by 8D IR cosine similarity against your last captured button. |
-| **`MCP`** | Cyan / Amber | Opt-in JSON-RPC 2.0 stdio MCP server status (`DISABLED` by default). |
+| **`EXP`** | Magenta | **Expert Mode** enabled (`expert_mode: true`), unlocking IR Lab (Scope), Macros, and DB Browser. |
+| **`ML-CLEAN`** / **`PN-CLEAN`** | Magenta | 1D K-Means or `PulseNet-IR` 1D-UNet denoiser rescued a noisy/AGC-stretched capture. |
+| **`AMB` / `MOD` / `SAT`** | Emerald / Amber / Red | Live ambient infrared interference monitor on capture screens. |
 
 ---
 
-## The 6 Application Tabs
+## Linear Navigation: Home Menu, Simple Mode & Expert Mode
 
-Press **`Tab`**, **`9`**, or **`0`** to cycle across all six workspaces: **`RX` → `REMOTE` → `PROBE` → `SAVED` → `MACRO` → `SET`**.
+`ir-studio` launches directly into a clean **Home Menu (`HOME`)** with breadcrumb headers (`IR STUDIO > Screen`) and predictable **`Esc` = Back** navigation so every screen's purpose is immediately clear:
 
-### 1. `RX` — Live IR Capture, Ambient Monitor & ML Inspection
+![IR Studio Home Menu showing the 5 Simple Mode actions](assets/ir-studio/home.png)
 
-![IR Studio RX tab showing live pulse oscilloscope, decoded NEC frame, and ambient IR meter](assets/ir-studio/rx.png)
-
-Point any physical IR remote at CardputerZero's IR receiver and press a button:
-
-- **Ambient IR Interference Bar (`y = 20..30`):** Continuously measures idle receiver edges and duty cycle, reporting `AMB: CLEAN` (Emerald), `AMB: MODERATE 120Hz` (Amber, e.g. PWM LED lamp), or `AMB: SATURATED` (Red, direct sunlight).
-- **Live Waveform & Protocol Banner:** Displays the mark/space pulse train, decoded protocol (`NEC`, `NECext`, `Samsung32`, `RC5`, `RC6`, `SIRC`, `Kaseikyo`) with hex `Address`/`Command`, or `RAW` carrier and pulse count. On `/dev/lirc*` receivers advertising `LIRC_CAN_MEASURE_CARRIER`, `ir-studio` automatically enables `LIRC_SET_MEASURE_CARRIER_MODE` and populates `CarrierEstHz` directly from hardware `LIRC_MODE2_FREQUENCY` packets.
-- **ML Diagnostics:** Shows the 1D K-Means centroids (`Short`/`Long` µs), `12→24→3` MLP class (`TV/Remote`, `AC State-Frame`, or `Ambient Noise`), and top **8D IR Fingerprint** match against installed `Flipper-IRDB` packs (e.g., `Match: Daikin_ARC480.ir (96%)`).
-- **Softkeys (`4..8`):**
-  - **`4 HOLD` / `LEARN`**: Toggle live IR capture listening vs. holding the current frame.
-  - **`5 CLEAN` / `SWEEP`**: Toggle 1D K-Means pulse denoising (`ML-CLEAN`) while listening, or trigger the **Carrier Frequency Sweeper (`36 / 38 / 40 / 56 kHz`)** when a capture is held (also available anytime via **`R`**; press **`Esc`** to cancel mid-sweep).
-  - **`6 DIFF`**: Open the **AC State-Frame Inspector** to split multi-subframe HVAC bursts, verify `SUM8` checksums, and diff two captured states (`22C Cool` vs `24C Cool`) bit-by-bit.
-  - **`7 SAVE`**: Save the captured button into `~/ir-studio/remotes/` (protected by **Smart Save Guard** if classified as `Ambient Noise`).
-  - **`8 CARR`**: Cycle default TX carrier frequency (`36 / 38 / 40 / 56 kHz`).
+- **Simple Mode (Default):** Shows the 5 everyday actions on one screen with no scrolling (**`Read & Replay`**, **`My Remotes`**, **`Universal Off`**, **`Smart AC`**, **`Settings`**).
+- **Expert Mode (`5 EXP` on `HOME` or `Settings → Expert Mode`):** Persisted in `~/.config/ir-studio/config.json` (`"expert_mode": true`). Unlocks **`+3` power tools** on `HOME` (**`IR Lab (Scope)`**, **`Macros`**, **`DB Browser`**), `Tab` cycling, `[x]` batch selection, `PURGE` noise cleanup, `ACT` probe filters, and full hardware settings.
+- **Safe Exit:** Pressing **`Esc`** (or **`8 QUIT`**) on `HOME` displays a confirmation banner (`Exit IR Studio? [Enter/Esc=YES]`). Press `Enter`/`Esc` to confirm or any other key to cancel (`Q` exits immediately).
 
 ---
 
-### 2. `REMOTE` — Virtual Multi-Button Deck & Smart AC Controller
+### 1. `Read & Replay` — 2-Step Capture & Instant Test
 
-![IR Studio REMOTE tab displaying 2-column virtual remote button grid](assets/ir-studio/remote.png)
+![IR Studio Read & Replay captured signal screen with instant SEND and SAVE & OPEN](assets/ir-studio/read.png)
 
-Open any `.ir` file from `SAVED` or `PROBE` to turn CardputerZero into a handheld multi-button remote control:
+Select **`Read & Replay`** on `HOME` (or press **`6 READ`** from `HOME`) to clone and test any physical remote in seconds:
 
-- Navigate the 2-column button grid with **`F` / `X` / `Z` / `C`** (Up / Down / Left / Right).
-- Press **`4 SEND`** or **`Enter`** to transmit the highlighted button (`Space` sends 3× burst).
-- Press **`5 SWEEP`** to run the **Carrier Frequency Sweeper** (`36 → 38 → 40 → 56 kHz`) on the highlighted button for finicky receivers (Sony `40 kHz`, Philips `36 kHz`, Cisco/Motorola `56 kHz`), automatically restoring `38 kHz / 33%` afterward.
-- For read-write **`[USER]`** remotes (`~/ir-studio/remotes/`), press **`6 LEARN+`** to capture and append a new button, **`R`** to rename a button on-device, or **`7 DEL`** (2-step confirm) to remove a button.
-- For read-only **`[RO-DB]`** remotes (`~/ir-studio/databases/` or `GEN:TV-B-Gone`), editing is blocked; press **`8 PROMO`** (`PromoteToUser`) to copy the `.ir` file into your User Library.
+1. **Step 1 — Aim & Press:** Point your remote 5–20 cm at CardputerZero's IR sensor and press any button once. The screen automatically freezes the captured frame so ambient light cannot overwrite it.
+2. **Step 2 — Signal Captured:** Displays the decoded protocol (`NEC`, `Samsung32`, `SIRC`, `RC5`, `RC6`, `Kaseikyo`, or `PulseNet-IR` brand guess) and any matching `Flipper-IRDB` remote:
+   - **`Enter` / `4 SEND`**: Immediately replay the captured signal to verify your TV/appliance reacts.
+   - **`5 SAVE`**: Saves the signal into `~/ir-studio/remotes/` and **immediately opens the new remote in `Remote Deck`**, where pressing **`5 LEARN+`** lets you add more buttons one after another. (If `PulseNet-IR` classifies the capture as ambient noise, a confirmation guard asks before saving.)
+   - **`6 AGAIN`**: Clears the capture and arms Step 1 again.
+   - **`7 ADDDB`** *(when a `>= 80%` Flipper-IRDB match is found, also key `1`)*: Copies the **entire matching DB remote** (all buttons) into `My Remotes` and immediately opens it in `Remote Deck`. When no DB match is found, **`7 SWEEP`** (also **`R`** anytime) sweeps `36 / 38 / 40 / 56 kHz`.
+   - **`8 MENU` / `Esc`**: Returns to `HOME`.
 
-#### Smart AC State-Frame Controller (`1` or `8 AC`)
+---
 
-![IR Studio Smart AC State-Frame Controller sub-view](assets/ir-studio/ac.png)
+### 2. `My Remotes` & `Remote Deck`
 
-Press **`1`** (or **`8 AC`** on a USER remote) inside `REMOTE` to open the offline parametric **Smart AC Controller** supporting `Gree`, `Midea`, `Daikin`, `LG_AC`, `Samsung_AC`, and `Mitsubishi` with mathematically valid `SUM8`, nibble-sum, and byte-complement checksums:
+![IR Studio My Remotes list](assets/ir-studio/saved.png)
 
-- **`Z` / `C`**: Adjust target temperature (`16°C .. 30°C`).
+![IR Studio Remote Deck displaying 2-column virtual remote button grid](assets/ir-studio/remote.png)
+
+- **`My Remotes`** lists your saved `.ir` remotes (`4 OPEN`, `5 SEND`, `6 NEW` to jump straight into `Read & Replay`, `7 DEL`, `8 MENU`).
+- **`Remote Deck`** displays a 2-column button grid navigated with **`F` / `X` / `Z` / `C`**:
+  - **`Enter` / `4 SEND`**: Transmit the highlighted button (`Space` sends 3× burst).
+  - **`5 LEARN+`** *(Simple Mode)* / **`6 LEARN+`** *(Expert Mode)*: Displays `AIM REMOTE & PRESS BUTTON TO ADD...` and appends the next pressed button directly into this remote.
+  - **`6 NAME`** *(Simple Mode)* / **`R`**: Rename the focused button.
+  - **`5 SWEEP`** *(Expert Mode)*: Sweep `36 → 38 → 40 → 56 kHz` on the highlighted button.
+  - **`7 DEL`**: 2-step delete of the focused button.
+  - **`8 BACK` / `Esc`**: Return to `My Remotes` (on read-only DB remotes, **`8 PROMO`** copies the full `.ir` file into `My Remotes`).
+
+---
+
+### 3. `Smart AC` — Parametric HVAC Controller
+
+![IR Studio Smart AC State-Frame Controller](assets/ir-studio/ac.png)
+
+Open **`Smart AC`** directly from `HOME` to control 6 AC brands (`Gree`, `Midea`, `Daikin`, `LG_AC`, `Samsung_AC`, `Mitsubishi`) with valid checksummed state frames:
+
+- **`Z` / `C`**: Adjust temperature (`16°C .. 30°C`).
 - **`F` / `X`**: Cycle HVAC mode (`COOL` → `HEAT` → `DRY` → `FAN` → `AUTO`).
-- **`R`**: Cycle AC brand (`Gree` → `Midea` → `Daikin` → `LG_AC` → `Samsung_AC` → `Mitsubishi`).
-- **`4 PWR`** / **`5 FAN`** / **`6 SWING`**: Toggle power, cycle fan speed (`AUTO`/`LOW`/`MED`/`HIGH`), and toggle vertical vane swing.
-- **`7 SEND`** (or **`Enter`**): Encode the full state frame + checksum and transmit immediately at `38 kHz / 33%`.
-- **`8 SAVE`**: Persist the current state as a standard Flipper `.ir` button (e.g., `COOL_22C` or `Power_Off`) inside `~/ir-studio/remotes/AC_<Brand>.ir`. Press **`Esc`** to return to the `REMOTE` grid.
+- **`R`**: Cycle AC brand.
+- **`4 PWR`** / **`5 FAN`** / **`6 SWING`**: Toggle power, fan speed (`AUTO`/`LOW`/`MED`/`HIGH`), and vane swing.
+- **`7 SEND`** (or **`Enter`**): Encode the full state frame + checksum and transmit immediately.
+- **`8 SAVE`**: Persist the state as a Flipper `.ir` button inside `~/ir-studio/remotes/AC_<Brand>.ir`. Press **`Esc`** to return to `HOME`.
 
 ---
 
-### 3. `PROBE` — Built-In `GEN:TV-B-Gone` & Universal Brand Sweep
+### 4. `Universal Off` (`PROBE`) — Built-In `GEN:TV-B-Gone` Sweep
 
-![IR Studio PROBE tab running Universal Power-Off sweep with 12-slot rewind trail](assets/ir-studio/probe.png)
+![IR Studio Universal Off running TV-B-Gone sweep with 12-slot rewind trail](assets/ir-studio/probe.png)
 
-`PROBE` works **100% offline out of the box** using two compiled-in read-only virtual packs—**`GEN:TV-B-Gone`** (`GEN:TVBG` Cyan badge, **100 universal `Power` codes** across major TVs, Projectors, and Soundbars) and **`GEN:TV-Service`** (discrete `Power_ON`/`Power_OFF`/`HDMI_1..4` and vendor service commands including LG `IN_START`/`EZ_ADJUST`, Samsung service codes, and Sony/Panasonic/Philips discrete remotes)—as well as any synced read-only external `.ir` packs:
+Open **`Universal Off`** from `HOME` to run offline power sweeps immediately via **`GEN:TV-B-Gone`** (100 built-in universal TV/Projector/Soundbar `Power` codes), **`GEN:TV-Service`**, or synced `Flipper-IRDB` packs:
 
-1. On a fresh install, **`GEN:TV-B-Gone`** is pre-selected automatically with `100` ready-to-fire `Power` codes. Press **`8 PACK`** to cycle `USER → GEN:TV-B-Gone → <synced DB packs>` and **`7 ACT`** to filter by action (`Power`, `Cool`, `Mute`, `Off`, `All`).
-2. *(Optional — 1-Button Recovery)* If you have a half-broken remote with even **one** working button, capture it in `RX` first, then switch to `PROBE` and press **`R`** (**Smart Probe Ranking**). `ir-studio` reorders the pack descending by 8D IR cosine similarity so the closest brand/protocol fires first.
-3. Adjust the sweep interval (`0.25s–5.0s`) with **`Z` / `C`** and press **`4 RUN`** (or **`Enter`**).
-4. The instant the target appliance reacts, hit **`4 STOP`** or **`Space`** to halt mid-sweep.
-5. Use **`F` / `X`** to backtrack along the **12-slot rewind trail** (`>` = last sent, `*` = previous 12), press **`5 TRY`** to single-test a candidate, and press **`6 SAVE`** (`PromoteToUser`) to copy the **entire matching `.ir` remote** (every button, not just Power) into `~/ir-studio/remotes/`.
+1. Press **`Enter`** (Simple Mode) or **`4 RUN`** to start sweeping immediately; hit **`4 STOP`**, **`Space`**, or **`Esc`** the instant the device reacts.
+2. Use **`F` / `X`** to backtrack along the **12-slot rewind trail** (`>` = last sent, `*` = previous 12), **`5 TRY`** to single-test, and **`6 SAVE`** (`PromoteToUser`) to save the matching remote into `My Remotes`.
+3. In **Expert Mode**, **`7 ACT`** filters by action (`Power`/`Cool`/`Mute`/`All`), **`8 PACK`** switches packs, and **`R`** runs **Smart Probe Ranking** using your last captured signal.
 
 ---
 
-### 4. `SAVED` — Dual-Scope `.ir` Library Browser
+### 5. Expert Mode Tools (`IR Lab`, `Macros`, `DB Browser`)
 
-![IR Studio SAVED tab listing User Library and Database Pack remotes](assets/ir-studio/saved.png)
+Enable **Expert Mode** (`5 EXP` on `HOME` or `Settings → Expert Mode`) to unlock the full engineering lab:
 
-`SAVED` enforces strict separation between your read-write **User Library** (`~/ir-studio/remotes/`) and read-only **Database Packs** (`~/ir-studio/databases/<pack>/`):
+#### `IR Lab (Scope)` (`RX`)
 
-- Press **`8 SRC`** to toggle between `USER` and `DB PACKS`.
-- Mark multiple remotes with **`Space`**, **`1`**, or **`D`** (`[x]`) for batch operations.
-- Press **`4 OPEN`** (or `Enter`) to load into `REMOTE`, **`5 SEND`** to fire the primary button, **`6 PROMO`** (in `DB`) to copy to `USER`, or **`6 PURGE`** (in `USER`) to scan and bulk-delete noise-only captures with a 2-step confirmation.
-- Press **`7 DEL`** to delete the focused remote or `[x]`-selected batch (strictly blocked on read-only `DB` packs).
+![IR Studio Expert IR Lab showing pulse oscilloscope, decoded NEC frame, and k-NN matches](assets/ir-studio/rx.png)
 
----
+- Live mark/space pulse oscilloscope, 1D K-Means centroids (`Short`/`Long` µs), `PulseNet-IR` 24-class protocol classifier, 32D SupCon k-NN remote matches, **AC State-Frame Bit Diff (`6 DIFF`)**, `4 HOLD/LEARN`, `5 CLEAN/SWEEP`, `7 SAVE`, and `8 CARR`.
 
-### 5. `MACRO` — Multi-Device IR Sequences
+#### `Macros`
 
 ![IR Studio MACRO tab showing ordered multi-device IR macro steps](assets/ir-studio/macro.png)
 
-Chain commands across multiple User Library remotes (e.g., *Movie Night*: `TV_LG.ir:Power` → wait `800 ms` → `Soundbar.ir:Power` → wait `500 ms` → `TV_LG.ir:HDMI_2`), persisted in `~/.config/ir-studio/macros.json` (`0600`):
+- Chain commands across multiple `My Remotes` files (`~/.config/ir-studio/macros.json`, `0600`) with configurable `50–10000 ms` delays (`4 RUN/STOP`, `5 NEW`, `6 ADD`, `7 DEL`, `8 EDIT`, `Z`/`C` delay step, `Esc` back).
 
-- Press **`4 RUN`** (or `Enter`) to execute the selected macro asynchronously with a live step progress bar.
-- Press **`4 STOP`**, **`Space`**, or **`Esc`** at any time to cancel mid-delay or mid-TX in `< 50 ms`.
-- Use **`5 NEW`**, **`6 ADD`**, **`7 DEL`**, and **`8 EDIT`** (with `Z`/`C` adjusting `delay_after_ms` in `100 ms` steps) to author macros directly on CardputerZero.
+#### `DB Browser`
+
+- Browse read-only synced `Flipper-IRDB` packs (`~/ir-studio/databases/<pack>/`), mark multiple user remotes with `1`/`Space` (`[x]`), bulk-remove noise captures (`6 PURGE`), copy DB remotes to `My Remotes` (`6 PROMO`), and toggle `USER`/`DB` via `8 SRC`.
 
 ---
 
-### 6. `SET` — Hardware, Manage DB Sources & Opt-In MCP
+### 6. `Settings` — Mode, MCP & DB Sync
 
-![IR Studio SET tab with LIRC carrier, DB source sync, and MCP Server toggle](assets/ir-studio/set.png)
+![IR Studio Settings screen with Expert Mode, MCP Server, DB Sync, and TX Carrier](assets/ir-studio/set.png)
 
-Configure hardware defaults and remote databases in `SET` (saved atomically to `~/.config/ir-studio/config.json` with `0600` permissions):
+Saved atomically to `~/.config/ir-studio/config.json` (`0600`):
 
-- **LIRC Device:** Auto-discovered `/dev/lirc0` (or `SIM` fallback).
-- **Default Carrier & Duty Cycle:** Select `36 / 38 / 40 / 56 kHz` and `33% / 50%` duty cycle.
-- **MCP Server (SSH):** **Disabled by default** (`mcp_enabled: false`). Toggle ON with **`4 TOGGLE`** or **`Enter`**, then press **`8 SAVE`**.
-- **Manage DB Sources:** Toggle enabled sources, add HTTPS GitHub/manifest sources (**`6 ADD`**), remove sources (**`7 DEL`** with `[x]` multi-select via `Space`/`1`/`D`), or trigger incremental ETag/SHA delta sync (**`5 SYNC`** or CLI `ir-studio --sync`).
+- **Simple Mode (4 rows):** `Expert Mode` (`OFF`/`ON`), `MCP Server (SSH)` (`OFF` by default), `Sync DB Sources`, and `TX Carrier Freq` (`36/38/40/56 kHz`).
+- **Expert Mode (7 rows):** Adds `TX Duty Cycle` (`33%`/`50%`), `Probe Interval` (`0.25s..5.0s`), and `Manage DB Sources` (`6 SRCS`).
 
 ---
 
@@ -161,17 +165,17 @@ Each enabled source syncs into its own read-only pack folder at **`~/ir-studio/d
 
 ## Keyboard Reference & Built-In Help (`H`)
 
-Press **`H`** from any tab to open the **5-page built-in Help modal** (`Z`/`C` turns pages `1/5..5/5`; `H`/`Esc` closes).
+Press **`H`** from any screen to open the **4-page built-in Help modal** (`Z`/`C` turns pages `1/4..4/4`; `H`/`Esc` closes).
 
 | Global Key | Function |
 | :--- | :--- |
-| **`Tab` / `9` / `0`** | Switch active tab (`RX`, `REMOTE`, `PROBE`, `SAVED`, `MACRO`, `SET`) |
 | **`F` / `X` / `Z` / `C`** | Up / Down / Left / Right navigation |
+| **`Enter`** | Primary action (Open item, Replay captured signal, Send button, Start/Stop Universal Off) |
 | **`4`..`8`** | Bottom softkey tiles aligned above keys `4..8` |
-| **`1` / `D` / `Space`** | Multi-select `[x]` toggle (`Space` also halts active `PROBE`) |
-| **`R`** | Smart Probe Ranking (8D IR cosine similarity sort in `PROBE`) |
-| **`H`** | Toggle 5-page built-in Help modal |
-| **`Esc`** | Cancel TX/RX/Probe/Macro, dismiss modal, or exit cleanly |
+| **`Esc`** | Step back (`Remote → My Remotes → HOME`); prompts exit confirmation on `HOME` |
+| **`Tab` / `9` / `0`** | Return to `HOME` (Simple Mode) or cycle all screens (Expert Mode) |
+| **`H`** | Toggle 4-page built-in Help modal |
+| **`Q`** | Immediate clean exit (restores `38 kHz / 33%` defaults) |
 
 ---
 
