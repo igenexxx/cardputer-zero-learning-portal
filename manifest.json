@@ -1,6 +1,6 @@
 {
   "title": "CardputerZero RF, NFC & IR Lab",
-  "subtitle": "Interactive Hardware, Sub-GHz ML, NFC & 38 kHz IR Learning Portal",
+  "subtitle": "Interactive Hardware, Sub-GHz ML, NFC, 38 kHz IR, Audio, BLE 5.2, Wi-Fi 2.4 GHz, 9-DoF IMU & Bus/Logic Learning Portal",
   "defaultRoute": "home",
   "sections": [
     {
@@ -101,6 +101,123 @@
           "slug": "ir-ml",
           "title": "ML: PulseNet-IR, Denoiser & 32D FP",
           "file": "content/ir-studio/ir-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "audio-studio",
+      "title": "Audio Studio (96 kHz & ML)",
+      "items": [
+        {
+          "slug": "audio-guide",
+          "title": "App Guide & Controls",
+          "file": "content/audio-studio/guide.md"
+        },
+        {
+          "slug": "audio-dsp",
+          "title": "Acoustics, FFT, YIN & Ultrasonics",
+          "file": "content/audio-studio/acoustics-dsp.md"
+        },
+        {
+          "slug": "audio-ml",
+          "title": "ML: SoundNet-2D & AnomalyAE-2D",
+          "file": "content/audio-studio/audio-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "bt-studio",
+      "title": "BT Studio (Bluetooth 5.2)",
+      "items": [
+        {
+          "slug": "bt-guide",
+          "title": "App Guide & Controls",
+          "file": "content/bt-studio/guide.md"
+        },
+        {
+          "slug": "bt-protocols",
+          "title": "BLE 5.2, Privacy Audit & BTDeviceNet",
+          "file": "content/bt-studio/ble-protocols.md",
+          "badge": "ML"
+        },
+        {
+          "slug": "bt-ml",
+          "title": "ML: 4-Model INT8 Neural Suite",
+          "file": "content/bt-studio/bt-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "wifi-studio",
+      "title": "WiFi Studio (2.4 GHz Wi-Fi)",
+      "items": [
+        {
+          "slug": "wifi-guide",
+          "title": "App Guide & Controls",
+          "file": "content/wifi-studio/guide.md"
+        },
+        {
+          "slug": "wifi-rf-protocols",
+          "title": "2.4 GHz RF, 802.11 IEs, WIDS & LAN",
+          "file": "content/wifi-studio/wifi-rf-protocols.md"
+        },
+        {
+          "slug": "wifi-ml",
+          "title": "ML: 3-Model INT8 Wi-Fi Neural Suite",
+          "file": "content/wifi-studio/wifi-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "imu-studio",
+      "title": "IMU Studio (9-DoF Inertial)",
+      "items": [
+        {
+          "slug": "imu-guide",
+          "title": "App Guide & Controls",
+          "file": "content/imu-studio/guide.md"
+        },
+        {
+          "slug": "imu-physics-dsp",
+          "title": "9-DoF Physics, Madgwick, FFT & Shaper",
+          "file": "content/imu-studio/imu-physics-dsp.md"
+        },
+        {
+          "slug": "imu-ml",
+          "title": "ML: 3-Model INT8 IMU Neural Suite",
+          "file": "content/imu-studio/imu-ml.md",
+          "badge": "ML"
+        }
+      ]
+    },
+    {
+      "id": "bus-studio",
+      "title": "Bus Studio (I2C/SPI/UART/ESP32)",
+      "items": [
+        {
+          "slug": "bus-guide",
+          "title": "App Guide & Controls",
+          "file": "content/bus-studio/guide.md"
+        },
+        {
+          "slug": "bus-protocols",
+          "title": "Bus Protocols, Power & .vcd Theory",
+          "file": "content/bus-studio/bus-protocols-electronics.md"
+        },
+        {
+          "slug": "esp32-s3-lab",
+          "title": "ESP32-S3 Hardware & Protocol Lab",
+          "file": "content/bus-studio/esp32-s3-lab.md",
+          "badge": "ESP32"
+        },
+        {
+          "slug": "bus-ml",
+          "title": "ML: 6-Model INT8 Bus Neural Suite",
+          "file": "content/bus-studio/bus-ml.md",
           "badge": "ML"
         }
       ]

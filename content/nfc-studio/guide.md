@@ -38,11 +38,12 @@ The top status bar displays the active mode (`SCAN`, `DUMP`, `EMU`, `SAVED`), op
 
 ![NFC Studio Home Menu (Simple Mode)](assets/nfc-studio/home.png)
 
-- **Simple Mode (Default, 4 items — zero scrolling):**
-  1. **`Read & Clone`** — 2-step card reader (`Tap Card → Tag Read → 4 EMU / 5 SAVE / 6 AGAIN / 7 INFO`).
-  2. **`My Cards`** — Emulate (`4 EMU`), inspect NDEF/memory (`5 INFO`), scan new (`6 NEW`), or delete `.nfc` cards.
+- **Simple Mode (Default, 5 items — zero scrolling):**
+  1. **`Read & Clone`** — 2-step card reader (`Tap Card → Tag Read → 4 EMU / 5 SAVE / 6 WRITE / 7 INFO / Space NEW`).
+  2. **`My Cards`** — Emulate (`4 EMU`), write to blank card (`5 WRITE`), inspect NDEF/memory (`6 INFO`), or delete `.nfc` cards.
   3. **`Emulate Card`** — Hardware 13.56 MHz Passive Target emulation (`Esc` stops emulation & turns RF OFF).
-  4. **`Settings`** — Expert Mode, Auto Scan, opt-in MCP Server (`SSH`), DB Sync.
+  4. **`Write / Clone`** — 2-step armed physical card writer (`DUMP -> BLANK CARD` & `QUICK NDEF WRITER`) for NTAG21x, Magic Gen1A, Gen2/CUID (Pure-Go Crypto1), standard MIFARE Classic sectors, and ISO 15693 NFC-V.
+  5. **`Settings`** — Expert Mode, Auto Scan, opt-in MCP Server (`SSH`), DB Sync.
 - **Expert Mode (`5 EXP-` on `HOME` or `Settings → Expert Mode`, persisted in `~/.config/nfc-studio/config.json`):** Unlocks `+3` engineering screens (**`NFC Radar Lab`**, **`Hex / NDEF Dump`**, **`Auto-Emu Probe`**), random UID (`RND`/`TYPE`), `[x]` multi-select, and `Manage DB Sources`.
 
 ### 0. `Read & Clone` — 2-Step Tap, Save & Emulate
@@ -83,13 +84,14 @@ When a Type 2 tag (`SAK == 0x00`, such as NTAG213/215/216 or MIFARE Ultralight) 
 
 The hex viewer color-codes pages by their architectural role:
 
-| Page Range | Color | Contents |
+| Page / Block Range | Color | Contents |
 | :--- | :--- | :--- |
-| **`P00` – `P02`** | **Cyan** | 7-byte UID, BCC0/BCC1 check bytes, Internal byte, and Static Lock bytes |
-| **`P03`** | **Amber** | **Capability Container (CC)** — e.g. `E1 10 3E 00` (NDEF magic, version, size, access) |
-| **`P04+`** | **Emerald** | User memory, NDEF TLV (`0x03`), URI/Text records, and Terminator (`0xFE`) |
+| **NTAG `P00`–`P02` / MIFARE `B00`** | **Cyan** | Factory UID, BCC check bytes, and Static Lock / Manufacturer block |
+| **NTAG `P03` / MIFARE `B03, B07, B11…`** | **Amber** | NTAG **Capability Container (CC)** or **MIFARE Sector Trailers** (`Key A / Access Bits / Key B`) |
+| **NTAG `P04+` / MIFARE data blocks** | **Emerald** | Writable user memory, NDEF TLV (`0x03`), and payload data |
+| **Locked MIFARE blocks (`??`)** | **Gray (Muted)** | Unreadable blocks where no known key authenticated |
 
-Each row shows the page index (`P00`), 4 hex bytes, and a printable ASCII gutter (`|card|`). Press **`F` / `X`** (or `Up` / `Down`) to scroll through every page, **`7` (`TOP`)** to jump back to `P00`, and **`4` (`NDEF` / `HEX`)** to toggle between raw page hex and the structured NDEF view.
+Each row shows the page/block index (`P00` or `B00`), hex bytes, and printable ASCII gutter. Press **`F` / `X`** (or `Up` / `Down`) to scroll, **`Z` / `C`** on 16-byte MIFARE blocks to cycle `[0..7]` ↔ `[8..15]` ↔ full 16-char `[ASCII]`, **`7` (`TOP`)** to jump back to `0`, and **`4` (`NDEF` / `HEX`)** to toggle between raw hex and NDEF view.
 
 ---
 
@@ -111,7 +113,32 @@ The `EMU` tab switches the ST25R3916 out of Reader mode and into **Passive Targe
 
 ---
 
-### 4. `SAVED` — User `.nfc` Library
+### 4. `WRITE TO CARD` — On-Device Physical Card Writer & Dump Cloner
+
+![NFC Studio WRITE TO CARD screen showing NTAG215 dump write plan and 2-step arming](assets/nfc-studio/write.png)
+
+Open **`Write / Clone`** directly from **`HOME`**, from **`My Cards` (`5 WRITE`)**, from **`Read & Clone` Step 2 (`6 WRITE`)**, or via the **`W`** shortcut from any card view. Entering `WRITE TO CARD` automatically pauses background RF scanning so SPI commands never collide.
+
+- **Smart `AUTO` Blank Detection (Default) & `Space` Preview:**
+  - Press **`Space`** on `WRITE TO CARD` to run an instant non-destructive `ProbeBlankTarget` preview and see `Blank: <chip> [EXACT / ADAPTED / INCOMPATIBLE]` right on screen before arming.
+  - Leaving `5 MODE` on **`AUTO (Detect Blank)`** automatically identifies the held card (`NTAG213/215/216`, `Magic Gen1A`, `MIFARE 1K/4K Gen2/Std`, or `ISO 15693`), trims trailing `0x00` pages when writing an NTAG215 dump onto a smaller NTAG213, falls back gracefully to writing data sectors on non-magic MIFARE Classic cards (`DATA OK - UID locked`), and explains incompatible silicon (`NTAG 7B != MIFARE 1K 4B`) cleanly before sending any RF write!
+- **Two Sub-Modes (`Z`/`C` or `7`):**
+  1. **`DUMP -> BLANK CARD`**: Automatically builds a safe `WritePlan` for the active `.nfc` tag:
+     - **NTAG213 / NTAG215 / NTAG216 (`NTAG 0xA2`)**: Writes user pages `P04+` via `WRITE (0xA2)` with read-back verification (`P00–P03` UID/Lock/CC and trailing config pages stay protected).
+     - **Magic Gen1A (`GEN1A MF`)**: Unlocks Chinese Gen1A cards via `0x40`/`0x43` backdoor and writes Block 0 (4B UID + auto XOR BCC) plus full 1K/4K data blocks in plaintext without needing Crypto1.
+     - **Magic Gen2 / CUID (`GEN2 CR1`) & Regular MIFARE Classic (`MF SECT`)**: Uses **pure-Go known-key Crypto1** (48-bit LFSR + ST25R3916 9-bit transparent parity) to authenticate sectors with default `FFFFFFFFFFFF` or trailer keys stored in your `.nfc` file.
+     - **ISO 15693 / NFC-V (`NFC-V 21`)**: Writes 4-byte user blocks via `WRITE_SINGLE_BLOCK (0x21)`.
+  2. **`QUICK NDEF WRITER`**: Pick **URL**, **TEXT**, or **WIFI** (`5 KIND`), cycle presets (`F`/`X`), save as `.nfc` (`6 SAVE`), or flash straight onto a blank NTAG21x tag.
+- **2-Step Safe Arming (`4 ARM` → `4 WRITE`):**
+  1. Hold a blank compatible card flat against the Cap NFC coil.
+  2. Press **`4` (`ARM`)** — the status panel border turns **Amber** with a 5-second countdown.
+  3. Press **`4` (`WRITE`)** or **`Enter`** within 5 seconds to start the non-blocking background writer with a live progress bar (`0–100%`) and automatic read-back verification (`VERIFIED OK`). Press **`Esc`** at any time to cancel cleanly (`FieldOff`).
+- **Sector Trailer Safety (`6 SAFE`):** For MIFARE Classic dumps, sector trailer blocks (`3, 7, 11, ...`) are **skipped by default** so malformed access bits never lock a sector permanently. Toggle `6 SAFE -> TRLR!` only when you intentionally want to write sector keys and access bits.
+- **Which Card or Keyfob Should You Use?** See the [Practical Card & Keyfob Use-Case Guide](#/nfc-domain) for a complete decision matrix covering NTAG213/215/216 (including iPhone Shortcuts & Amiibo), standard MIFARE Classic 1K/4K, Magic Gen1A vs. Gen2/CUID, ISO 15693, FeliCa, DESFire/EMV, and 125 kHz LF fobs.
+
+---
+
+### 5. `SAVED` — User `.nfc` Library
 
 ![NFC Studio SAVED tab listing exported Flipper-compatible .nfc files](assets/nfc-studio/saved.png)
 
@@ -277,6 +304,9 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/nfc-studio --mcp
 | `nfc_emulate_tag` | Hardware Passive Target A emulation (`confirm_rf: true`, max 30s) |
 | `nfc_list_saved` / `nfc_read_saved` | Inspect saved Flipper `.nfc` library |
 | `nfc_save_tag` / `nfc_delete_saved` | Save or delete `.nfc` files (`delete` requires `confirm: true`) |
+| `nfc_probe_blank` | Non-destructively detect blank card type (`NTAG213/215/216`, `Gen1A`, `MIFARE 1K/4K`, `NFC-V`, RO types) and optionally check compatibility against a saved `.nfc` (`source_name`) |
+| `nfc_write_saved_tag` | Write a saved `.nfc` file directly to a blank card (default `magic_gen: "auto"` probes target & adapts NTAG/MIFARE automatically; `confirm_write: true`) |
+| `nfc_write_mifare_gen1a` | Write Block 0 (4B UID + BCC) and optional 16-byte sector blocks to a Gen1A Magic Card via `0x40`/`0x43` backdoor (`confirm_write: true`) |
 | `nfc_write_ntag` | Write 4-byte NTAG213/215/216 pages (`WRITE 0xA2`) with read-back verify & system-page guard (`confirm_write: true`) |
 | `nfc_clone_magic_uid` | Clone 4-byte UID + XOR BCC onto Gen1A (`0x40`/`0x43`) or Gen2/CUID Magic Card (`confirm_write: true`) |
 | `nfc_compose_ndef` | Compose URL, Text, or Wi-Fi WSC NDEF TLV into 4-byte pages (optional `save_name` or `write_to_tag` with `confirm_write: true`) |

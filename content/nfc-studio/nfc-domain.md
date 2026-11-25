@@ -189,7 +189,87 @@ Both `Page N:` (4-byte Type 2 pages) and `Block N:` (16-byte MIFARE blocks) are 
 
 ---
 
-## 7. Interactive Lab: ISO 14443-A & NDEF Inspector
+## 7. Physical Card Writing: NTAG21x, Magic Gen1A, Gen2/CUID & Pure-Go Crypto1
+
+Understanding what silicon **can** and **cannot** be rewritten prevents wasted blank cards and bricked sectors:
+
+| Card Family | UID Rewritable? | Write Protocol on ST25R3916 | Safety Guard in `nfc-studio` |
+| :--- | :--- | :--- | :--- |
+| **NTAG213 / 215 / 216 (Type 2)** | **No** (factory laser-locked in `P00–P02`) | `WRITE (0xA2, page, b0..b3)` + `READ (0x30)` verify | Blocks `P00–P03` (UID/Lock/CC) and trailing dynamic-lock/config pages by default (`ErrProtectedPage`). |
+| **Magic Card Gen1A (Chinese UID)** | **Yes** (4B Block 0 + BCC) | `HALT (0x50 0x00)` → 7-bit `0x40` → 8-bit `0x43` → plaintext `WRITE (0xA0, blk)` | Unlocks **all** 1K/4K blocks without Crypto1! Skips sector trailers (`blk%4==3`) unless `TRLR!` / `include_trailers: true`. |
+| **Magic Card Gen2 / CUID** | **Yes** (4B Block 0 via Sector 0 auth) | 3-pass **Crypto1** known-key auth (`no_tx_par`/`no_rx_par` 9-bit framing) → encrypted `WRITE (0xA0, blk)` | Uses pure-Go 48-bit Crypto1 LFSR in `internal/st25r3916/crypto1.go` strictly with known keys (factory `FF..FF` or `.nfc` trailer keys). |
+| **Standard MIFARE Classic 1K/4K** | **No** (Block 0 is factory RO) | Same pure-Go known-key Crypto1 on data blocks `1..63` / `1..255` | Skips Block 0 and sector trailers by default so bad access bits never brick a sector. |
+| **ISO 15693 / NFC-V (SLIX/ICODE)** | **No** (64-bit UID is factory RO) | Addressed `WRITE_SINGLE_BLOCK (0x21)` + `READ_SINGLE_BLOCK (0x20)` verify | Enforces 4-byte blocks and verifies read-back after every block. |
+| **EMV / DESFire / FeliCa / NFC-B** | **No** | Hardware cryptography / non-writable silicon | Rejected cleanly by `BuildWritePlan` (`StrategyUnsupported`); use **Emulate** for FeliCa IDm. |
+
+### How Pure-Go Crypto1 Runs on ST25R3916 (No Hardware Crypto Engine)
+
+Unlike legacy PN532/MFRC522 chips, the **ST25R3916** does not embed a proprietary MIFARE Crypto1 block. Instead, it exposes **transparent raw-parity mode** in `regISO14443A (0x05)` (`no_tx_par = 0x80`, `no_rx_par = 0x40`):
+1. Reader sends plaintext `AUTH_A (0x60)` / `AUTH_B (0x61)` + block index with standard CRC and receives the tag's 4-byte nonce $n_T$.
+2. `internal/st25r3916/crypto1.go` initializes the 48-bit LFSR with the known 6-byte key, shifts $\text{UID} \oplus n_T$, generates a random 4-byte reader nonce $n_R$, and computes $a_R = \text{PRNG}(n_T, 64)$.
+3. Every encrypted byte carries an **encrypted odd-parity bit** ($p_i = \text{oddParity}(m_i) \oplus f(\text{LFSR})$), yielding **9 bits per byte** packed LSB-first into the ST25R3916 FIFO via `PackParityBits` and `regTxBytes1/2`.
+4. After verifying the card's encrypted $a_T = \text{PRNG}(n_T, 96)$, subsequent `WRITE (0xA0)` and `READ (0x30)` frames (with ISO 14443-A CRC16) and 4-bit ACKs (`0x0A`) flow encrypted across the same 9-bit transparent channel.
+
+### Cross-Card Compatibility Matrix (`AUTO` Mode)
+
+| Source `.nfc` → Blank Card | Compatibility | Behavior in `AUTO` Mode |
+| :--- | :---: | :--- |
+| **NTAG213 → NTAG215 / 216** | Exact | Writes all user pages `P04+` directly. |
+| **NTAG215 / 216 → NTAG213** | Adapted (if payload ≤ 36 pg) | Automatically trims trailing `0x00` padding after NDEF `0xFE`; rejects if active payload exceeds 144 bytes. |
+| **MIFARE 1K → Magic Gen1A (1K/4K)** | Exact / Adapted | Detects `0x40`/`0x43` non-destructively; clones Block 0 UID + all readable data blocks. |
+| **MIFARE 1K → Gen2 CUID / Regular 1K** | Exact | Tries Crypto1 Block 0 (`Gen2/CUID`); if Block 0 returns `NAK` (regular MIFARE), falls back to writing data blocks `1..63` (`DATA OK - UID locked`). |
+| **NTAG21x (7B) ↔ MIFARE Classic (4B)** | Incompatible | Rejected before any RF write (`NTAG (7B) != MIFARE 1K (4B)`). |
+| **DESFire / EMV / FeliCa / 125 kHz LF** | Incompatible | Rejected with exact reason (use **Emulate** for FeliCa IDm; 125 kHz LF is unsupported by ST25R3916). |
+
+---
+
+## 8. Practical Guide: Card & Keyfob Types, Purposes & Which Blank to Choose
+
+Not all NFC cards and plastic keyfobs ("fobs") are interchangeable. Use this quick reference to match every physical card/fob on your bench to the right real-world job:
+
+### Quick Decision Table (Goal → Best Card / Fob)
+
+| What You Want to Do | Recommended Card / Fob | iPhone Support? | UID Changeable? | `nfc-studio` Mode |
+| :--- | :--- | :---: | :---: | :--- |
+| **Tap-to-join Guest Wi-Fi, URLs, vCards** | **NTAG213 / NTAG215 / NTAG216** | Yes (native, no app) | No (7B factory RO) | `WRITE -> QUICK NDEF` |
+| **iPhone Shortcuts / Home Assistant / `radio-bridge` triggers** | **NTAG213 / NTAG215** | Yes (native) | No (7B factory RO) | `READ` / `WRITE` |
+| **Nintendo Amiibo backups (Switch / 3DS)** | **NTAG215** *(strictly 504 B!)* | Yes | No | `READ` / `WRITE` |
+| **Enroll a new key into your own smart lock / ESP32 (RC522/PN532)** | **Standard MIFARE Classic 1K** (e.g. NXP / Fudan FM11RF08) | **No** *(iOS blocks Crypto1)* | No (4B Block 0 RO) | `READ` / `WRITE` (data sectors) |
+| **Learn sectors, Key A/B, Access Bits & Value Blocks (e-wallet)** | **Standard MIFARE Classic 1K / 4K** | **No** | No | `READ` / `HEX` / `nfc_dict_scan` |
+| **Clone a 4B UID + 1K/4K dump onto a physical test card** | **Magic Card `Gen1A`** *(fast backdoor)* or **`Gen2 / CUID`** *(stealth)* | **No** | **Yes** (4B Block 0) | `WRITE -> AUTO DET` |
+| **Long-range library / ski-pass / warehouse asset tags** | **ISO 15693 / NFC-V** (ICODE SLIX / SLIX2) | Yes (iOS 13+) | No (8B `E0..` RO) | `READ` / `WRITE` (`0x21`) |
+| **Transit / e-money IDm experiments (Suica / PASMO / Octopus)** | **FeliCa / NFC-F** (or CardputerZero `EMU`) | Yes | No | `EMU` (Passive Target F) |
+| **Contactless bank cards / e-Passports / modern AES corporate badges** | **ISO 14443-4 / DESFire / EMV** (`SAK 0x20`) | Yes (Apple Pay / apps) | No (hardware crypto) | `nfc_inspect_emv` (read-only) |
+| **Legacy apartment intercoms ("домофоны") / HID Prox fobs** | **125 kHz LF RFID** (EM4100 / T5577) | **No** | Only T5577 (125 kHz writer) | **Not supported** *(ST25R3916 is 13.56 MHz only)* |
+
+### Detailed Breakdown by Card / Keyfob Family
+
+1. **NTAG213 / NTAG215 / NTAG216 (`SAK = 0x00`, 7-byte UID)**
+   - **Best for:** Everyday smartphone automation, Wi-Fi tap cards, digital business cards, product/equipment labels, Home Assistant & iPhone Shortcuts triggers, and **Nintendo Amiibo** (**NTAG215** specifically — `504 bytes` user memory).
+   - **Capacities:** `NTAG213` = `144 B` (`36` user pages), `NTAG215` = `504 B` (`126` pages), `NTAG216` = `888 B` (`222` pages).
+   - **Limits:** Factory UID (`P00–P02`) is laser-locked and cannot be changed; cannot impersonate a 4-byte MIFARE Classic access badge. Rated for ~100,000 rewrites unless permanent lock bits are set (`nfc-studio` guards lock/OTP pages automatically).
+
+2. **Standard MIFARE Classic 1K / 4K (`SAK = 0x08` / `0x18`, 4-byte UID, e.g. Fudan FM11RF08)**
+   - **Best for:** Registering your own physical access cards/keyfobs into locks, intercoms, or **ESP32-S3 + RC522/PN532** projects where you can enroll the card's native UID; experimenting with 16 independent Crypto1 sectors (`752 B` writable user data in 1K), custom `Key A / Key B`, Access Bits, and hardware increment/decrement **Value Blocks**.
+   - **Limits:** `Block 0` (manufacturer UID) is read-only — **cannot clone another card's UID**. **Apple iPhones do not support MIFARE Classic**, and many non-NXP Android phones also omit Crypto1 hardware, so avoid MIFARE Classic for smartphone URL/Wi-Fi tags.
+
+3. **Magic Cards & Keyfobs (`Gen1A` vs. `Gen2 / CUID`)**
+   - **Best for:** Authorized physical security testing and replicating 4-byte MIFARE Classic test badges onto real silicon.
+   - **`Gen1A` (Chinese UID Backdoor):** Unlocks all blocks (`0..63` / `0..255`) in plaintext via `HALT` → 7-bit `0x40` → 8-bit `0x43` without Crypto1. Fast and almost impossible to brick, *but* some strict security readers detect and reject Gen1A cards by sending `0x40` as a honeypot check.
+   - **`Gen2 / CUID` (Direct Write):** Behaves identically to a genuine MIFARE Classic card (does **not** answer `0x40`/`0x43`) and allows rewriting `Block 0` through normal Sector 0 Crypto1 authentication (`nfc-studio` supports this natively via Pure-Go Crypto1!). **Caution:** Writing an invalid BCC byte in `Block 0` or invalid Access Bits in a sector trailer can lock a Gen2 card (`nfc-studio` auto-computes BCC and skips sector trailers by default via `6 SAFE`).
+
+4. **ISO 15693 / NFC-V (`ICODE SLIX`, 8-byte UID `E0..`)**
+   - **Best for:** Longer read range (up to ~10 cm on larger coils), library books, ski passes, smart medication/supply labels, and industrial inventory tags.
+
+5. **FeliCa (`NFC-F`), DESFire & EMV (`SAK = 0x20`)**
+   - **Best for:** High-security transit, corporate access, and payment cards backed by hardware AES/3DES/RSA/ECC cryptography. Cannot be cloned onto blank tags — use `nfc-studio`'s **Emulate (`EMU`)** for FeliCa `IDm` testing and **`nfc_inspect_emv`** for strictly read-only masked-PAN inspection.
+
+6. **125 kHz LF RFID Keyfobs (EM4100 / T5577 / HID Prox)**
+   - Visually identical to 13.56 MHz blue/gray plastic keyfobs, but operate at **125 kHz** (100× lower frequency). Neither smartphones nor CardputerZero's 13.56 MHz **ST25R3916** can read or write them — `nfc-studio` will report `No 13.56MHz blank (125kHz unsupported)`.
+
+---
+
+## 9. Interactive Lab: ISO 14443-A & NDEF Inspector
 
 Experiment with real 4-byte and 7-byte UIDs, inspect live Cascade Level 1/2 frames and BCC XOR checksums, encode custom NDEF URLs into Type 2 TLV pages, and generate a ready-to-save Flipper `.nfc` file:
 

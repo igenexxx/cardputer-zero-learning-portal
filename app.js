@@ -11,6 +11,14 @@ import {
   mountSignalClassifier,
   mountFoxhuntRadar,
   mountIrLab,
+  mountAudioSpectrumLab,
+  mountAudioAnomalyLab,
+  mountAudioDopplerLab,
+  mountBtBleLab,
+  mountWifiRfLab,
+  mountImuSensorLab,
+  mountBusLogicLab,
+  mountESP32S3Lab,
 } from "./widgets.js";
 import { escapeHtml, parseMarkdown } from "./markdown.js";
 import { createSearchController } from "./search.js";
@@ -23,6 +31,14 @@ const WIDGET_REGISTRY = {
   "interactive:foxhunt-radar": mountFoxhuntRadar,
   "interactive:ir-protocol-lab": mountIrLab,
   "interactive:ir-lab": mountIrLab,
+  "interactive:audio-spectrum-lab": mountAudioSpectrumLab,
+  "interactive:audio-anomaly-lab": mountAudioAnomalyLab,
+  "interactive:audio-doppler-lab": mountAudioDopplerLab,
+  "interactive:bt-ble-lab": mountBtBleLab,
+  "interactive:wifi-rf-lab": mountWifiRfLab,
+  "interactive:imu-sensor-lab": mountImuSensorLab,
+  "interactive:bus-logic-lab": mountBusLogicLab,
+  "interactive:esp32-s3-lab": mountESP32S3Lab,
 };
 
 const appState = {
