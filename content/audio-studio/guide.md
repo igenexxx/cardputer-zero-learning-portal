@@ -87,7 +87,7 @@ Audio Studio launches into a clean **5-item Simple Mode Home Menu** (`expert_mod
 | `Enter` | Open selected menu item or trigger primary action |
 | `Esc` | Step back to Home Menu (on Home: prompts Exit confirmation) |
 | `4` `5` `6` `7` `8` | Bottom softkeys directly above physical keys `4..8` |
-| `H` | Open 4-page built-in Help modal (`Z/C` flips pages) |
+| `H` | Open Context-Aware Help for the active screen (`Z/C` flips overflow pages; cyan = `4..8` softkeys, amber = hotkeys) |
 | `R` | *(SIM mode only)* Cycle 6 synthetic acoustic scenes |
 | `Q` | Quit immediately |
 

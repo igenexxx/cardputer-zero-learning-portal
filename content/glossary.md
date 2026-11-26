@@ -55,6 +55,9 @@ A spectrum analyzer trace mode that latches the maximum RSSI value observed in e
 ### RSSI (Received Signal Strength Indicator)
 A real-time measurement of incoming RF power at the receiver's tuned channel, converted from the CC1101's signed 8-bit `RSSI` status register into dBm ($\text{dBm} = \text{raw}/2 - 74$).
 
+### Signal Snapshot & Pulse-Width Histogram
+A combined time-domain and statistical view in `rf-heatmap` (`SignalSnapshot`, hotkey `V` / `7 SNAP`, MCP `rf_signal_snapshot`) that plots a captured Sub-GHz signal's OOK square-wave transitions (`+HIGH` emerald, `-LOW` cyan, inter-frame `SYNC` gaps amber) alongside a 24-bin dual-polarity microsecond duration histogram overlaid with 1D K-Means `ShortUs` (`S`) and `LongUs` (`L`) centroid markers, duty cycle %, and jitter %.
+
 ### SP3T Antenna Switch
 A Single-Pole Triple-Throw RF switch on the Cap CC1101 & NFC controlled by two GPIO pins (`SW0`, `SW1`) that routes the CC1101's RF port to the optimal matching network for the selected frequency band (315 MHz, 433 MHz, or 868/915 MHz).
 

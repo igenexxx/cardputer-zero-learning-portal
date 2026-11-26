@@ -1,4 +1,4 @@
-# IMU Studio — App Guide & Controls (`v0.3.0`)
+# IMU Studio — App Guide & Controls (`v0.3.1`)
 
 **IMU Studio** (`imu-studio`) turns CardputerZero's onboard **9-DoF inertial sensors (`BMI270` 6-axis accelerometer/gyroscope + `BMM150` 3-axis magnetometer)** into a non-root pocket engineering, mechanical vibration FFT, magnetic metal/tracker finder, 3D tilt-compensated compass, seismograph tamper guard, Black-Box incident recorder, and Everyday-Carry (EDC) physics lab powered by Linux IIO sysfs `Pread` adapters and an embedded **6-model Pure-Go INT8 `.czml` Neural Suite (Domains `17–22`, ~48 KB, `0 allocs/op`)**: `IMUVibNet-1D`, `IMUTamperNet-1D`, `IMUMagAnomalyAE`, `IMUTapNet-1D`, `IMUBioNet-1D`, and `IMUGestureNet-1D`.
 
@@ -14,7 +14,8 @@
 - **Smart Boot `AutoBaselineWarmup`**: During the first seconds after launch, if CardputerZero rests still (`|gyro| < 1.5 °/s`), `AutoBaselineWarmup` automatically locks an initial gyro zero-rate bias and ambient magnetic/vibration floor with a live banner badge (`WARMUP` → `CAL OK`) — zero manual menus required. If the unit is already moving in your hand, warmup defers gracefully without corrupting stored calibration.
 - **Live Telemetry Status Banner**: Summarizes live orientation (`P/R`), magnetic field (`|B| µT`), vibration health (`ISO10816Grade`), Black-Box `PreTriggerRing` armed state, and Tamper Watch status at a glance.
 - Starts in **Simple Mode** (**7** everyday screens, beginning with **`Quick Missions`** at **#1**): `Quick Missions` (8 wizards), `3D Horizon & Level`, `Magnetic Finder`, `Vibration FFT`, `3D Compass`, `Saved & Replay`, and `Settings`.
-- Press **`5 EXPERT`** on Home (or toggle in Settings) to unlock **+9 Engineering & Unconventional EDC Labs**: **Seismograph & Tamper Guard**, **Dual-Axis 3D-Printer Input Shaper**, **G-Force Traction Circle, Pedometer & Drop Logger**, **Machine Baseline Drift**, **Raw 9-DoF IIO**, **Secret Knock Matcher**, **Wall/Material Tap X-Ray**, **Contactless BCG / Soldering Tremor / Keystroke Side-Channel**, and **3D Air-Writing Magic Wand**.
+- Press **`7 EXPERT`** on Home (or toggle in Settings) to unlock **+9 Engineering & Unconventional EDC Labs**: **Seismograph & Tamper Guard**, **Dual-Axis 3D-Printer Input Shaper**, **G-Force Traction Circle, Pedometer & Drop Logger**, **Machine Baseline Drift**, **Raw 9-DoF IIO**, **Secret Knock Matcher**, **Wall/Material Tap X-Ray**, **Contactless BCG / Soldering Tremor / Keystroke Side-Channel**, and **3D Air-Writing Magic Wand**.
+- **Context-Aware Help (`H` / `8 HELP` on Home)**: Press **`H`** on any screen or sub-view (including Mission stages, Horizon views, Saved Action Sheet/Replay, Dual-Axis Shaper, or Bio Lab modes) to open a full-screen cyan-framed help modal tailored strictly to the active screen — with a 2-line summary, **cyan** `4`..`8` softkey badges, **amber** hotkey badges, and automatic pagination (`Z`/`C` to page, `H`/`Enter`/`Esc` to close).
 
 ---
 

@@ -1,4 +1,4 @@
-# BT Studio — App Guide & Controls (`v0.4.0`)
+# BT Studio — App Guide & Controls (`v0.4.1`)
 
 **BT Studio** (`bt-studio`) turns CardputerZero's onboard **Cypress Bluetooth 5.2 Dual-Mode (`hci0`)** transceiver and **BlueZ 5.82** stack into a beginner-friendly, non-root pocket Bluetooth analyzer powered by an embedded **4-model Pure-Go INT8 `.czml` Neural Suite** (`BTDeviceNet v2`, `BLEPayloadNet-1D`, `BTSeqNet-1D`, `BTAnomalyAE` — `0 allocs/op`): **Guided Quick Missions**, **Proximity Tap-to-Select (`< 30 cm`)**, **Smart Action Sheet**, **Learn My Room (`NEW ONLY`) baseline**, **GATT Security Grade (`A–F`)** auditor, **Neural Live Notify Byte-Diff**, **GATT Honeypot** mock peripheral, 46-key QWERTY **BLE/SPP serial terminal**, non-root **Classic L2CAP/SDP probe**, Wireshark `.btsnoop` exporter, temporal anti-stalking tracker guard, Kalman Foxhunt locator, and passive IoT sensor monitor.
 
@@ -14,6 +14,7 @@
 - **Live Home Verdict Banner**: The top status bar translates live Bluetooth telemetry into plain English — **emerald** (`All clear · N nearby · M sensors`), **amber** (nearby unknown tracker or unfamiliar `[NEW]` devices since your room baseline), or **red** (BLE Spam flood or untrusted `FOLLOWING` tracker).
 - Starts in **Simple Mode** (**7** everyday screens, starting with **`Quick Missions`** at **#1**): `Quick Missions`, `BLE & BT Radar`, `Tracker & Privacy Guard`, `RSSI Foxhunt`, `BLE Sensors Live`, `Saved & Captures`, and `Settings`.
 - Press **`5 EXPERT`** on Home (or toggle in Settings) to unlock **+6 Research Labs**: **GATT Explorer & Audit**, **Beacon & GATT Honeypot**, **BLE/SPP Terminal**, **Classic L2CAP / SDP**, **Airspace Activity & IDS**, and **Presence & Scripts**.
+- **Context-Aware Help (`H`)**: Press **`H`** on any screen, overlay, or active mission stage (or **`7 HELP`** on Home) to open a screen-specific Help modal with a 2-line summary card, cyan **`4`..`8`** softkey badges, amber hotkey badges, and automatic **`Z`/`C`** pagination (`H` / `Enter` / `Esc` closes).
 
 ---
 

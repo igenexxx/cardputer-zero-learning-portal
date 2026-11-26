@@ -39,7 +39,18 @@ Every screen shares a compact top status bar (`y = 0..17`) showing live radio st
 ![RF Heatmap — Read & Replay Captured Signal](assets/rf-heatmap/read.png)
 
 1. **Step 1 (`AUTO-CAPTURE: PRESS REMOTE`):** Automatically scans key ISM frequencies (`433.92 / 868.35 / 315.00 / 915.00 / 433.42 / 868.80 MHz`), locks onto any strong burst (`>= -72 dBm`), rejects noise via `PulseNet-RF`, and automatically freezes on Step 2! Press **`4 AUTO/FREQ`** to switch between `Auto-Scan` and a fixed frequency, **`5 MOD`** to change modulation, or **`6 REC`/`STOP`** for manual RAW capture.
-2. **Step 2 (`SIGNAL CAPTURED!`):** Press **`Enter` / `4 SEND`** to test replay immediately (rolling codes require 2-step confirmation), **`5 SAVE`** to save `.sub` into `~/rf-heatmap/captures/` and open `My Captures`, **`6 AGAIN`** to capture another button, or **`8 MENU` / `Esc`** to return to `HOME`.
+2. **Step 2 (`SIGNAL CAPTURED!`):** Press **`Enter` / `4 SEND`** to test replay immediately (rolling codes require 2-step confirmation), **`5 SAVE`** to save `.sub` into `~/rf-heatmap/captures/` and open `My Captures`, **`6 AGAIN`** to capture another button, **`7 SNAP` / `V`** to inspect the captured OOK waveform & pulse timing histogram, or **`8 MENU` / `Esc`** to return to `HOME`.
+
+### 0b. Captured Signal Snapshot & Pulse Timing Histogram (`7 SNAP` / `V`)
+
+![RF Heatmap — Captured Signal Snapshot & Pulse Timing Histogram](assets/rf-heatmap/snapshot.png)
+
+Open **Signal Snapshot** from **Read & Replay** Step 2 (`7 SNAP` or `V`), **My Captures** (`V` on any RAW or decoded Key `.sub` file — Key files like `Princeton`, `CAME`, and `Linear` are synthesized automatically), **Pulse Scope** (`V`), or **RAW Trimmer** (`V`):
+
+- **Top Summary Strip**: Protocol or `RAW` pulse count, discovered K-Means Short (`S`) / Long (`L`) centroids in `µs`, and RF carrier **Duty Cycle (`DC:%`)**.
+- **Top Panel — OOK Square-Wave Oscilloscope (`WAVE`)**: Plots the captured RF-ON (`+HIGH`, emerald) and RF-OFF (`-LOW`, cyan) transitions with amber shading for inter-frame **Sync Gaps** (`> 3500 µs`). Pan horizontally along the timeline with **`Z` / `C`** and zoom `1x → 2x → 4x → 8x` with **`5 ZOOM`** or **`F` / `X`**.
+- **Bottom Panel — Dual-Polarity Pulse-Width Histogram (`HIST`)**: 24 microsecond buckets separating `+HIGH` pulses (emerald) and `-LOW` gaps (cyan), overlaid with vertical dashed K-Means centroid markers for **`S`** (amber, Short / `TE`) and **`L`** (magenta, Long), ratio (`R:x`), and timing jitter (`J:%`).
+- **Bottom Nav Bar (`4..8`)**: `4 SPLIT/WAVE/HIST` (cycle layout) · `5 Z 1x..8x` (zoom) · `6 TX` (replay) · `7 TRIM` (jump to RAW Trimmer) · `8 BACK`.
 
 ---
 
@@ -166,11 +177,15 @@ Before downloading large archives, use this four-step checklist to find focused,
 > [!TIP]
 > Always point `subpath` at a specific device category folder (e.g. `Sub-GHz/Ceiling_Fans` instead of the entire repo root). Smaller, focused packs probe faster, keep RAM usage minimal on CardputerZero, and make reaction-time backtracking in **PROBE** much easier.
 
-### Built-in 5-Page Help Overlay (`H`)
+### Context-Aware Help Overlay (`H`)
 
-![RF Heatmap — Built-in Help Overlay](assets/rf-heatmap/help.png)
+![RF Heatmap — Context-Aware Help Overlay](assets/rf-heatmap/help.png)
 
-Press `H` at any time to open the 5-page on-device quick reference covering controls, waterfall interpretation, squelch/modulation, Auto-Probe & databases, and decode/saved workflows. Flip pages with `Z` / `C` (or `Space` / `Tab`) and close with `H`, `Enter`, or `Esc`.
+Press **`H`** on **any** screen or sub-view (`Home`, `Read & Replay` listening/captured, `Signal Snapshot`, `RAW Trimmer`, `Spectrum Map`, `My Captures`, `Sensors`, `Pulse Scope`, `OOK Decoder`, `Auto-Probe` idle/running, `Foxhunt Geiger`, `Settings`, or `Manage DB Sources`) to open a tailored reference for **that exact screen**:
+
+- **Screen Summary Card**: Explains in two concise lines what the active screen does and its key capabilities.
+- **Color-Coded Keycap Legend**: Cyan keycaps mark `4..8` bottom-bar softkeys; amber keycaps mark directional/letter hotkeys (`F/X`, `Z/C`, `V`, `T`, `G`, `B/D`, `S/L`, `Q`) that are active right now in your current Simple or Expert mode.
+- **Auto-Pagination**: Compact screens fit on a single page (`1/1`); feature-rich labs auto-split cleanly across `1/2` and `2/2` (`Z` / `C` or `F` / `X` to flip pages; `H`, `Enter`, or `Esc` to close).
 
 ---
 
@@ -190,7 +205,7 @@ CardputerZero uses a compact 46-key layout where `F/X/Z/C` act as directional ar
 | **`L`** | **Toggle Auto-Lock (`LOCK`)** between automatic burst snapping and manual cursor |
 | `Enter` | **HEATMAP**: Lock onto peak/cursor & jump to `PULSE` · **PULSE / DECODE / SAVED**: Transmit (`TX`) |
 | `Space` | Context primary action (`HOLD/RUN` in Heatmap/Decode, `REC/STOP` in Pulse) |
-| `H` | Toggle 4-page interactive Help modal |
+| `H` | Open Context-Aware Help for the active screen (`Z/C` flips pages if `> 1`) |
 | `Q` or `Esc` | Quit safely (returns CC1101 to `IDLE` and restores `GPIO 14`) |
 
 ---
@@ -247,6 +262,7 @@ ssh <cardputer-host> /usr/share/APPLaunch/bin/rf-heatmap --mcp
 | `rf_send_packet` / `rf_recv_packet` | 64B hardware FIFO Packet Engine TX (`confirm_rf: true`) / RX with Sync Word, CRC-16, whitening, and RSSI/LQI |
 | `rf_decode_ook` | Decode signed µs pulses (`Princeton`, `PT2262`, `EV1527`, `CAME`, `Linear`, `Holtek`, `Nice FLO`, `KeeLoq`, `Somfy Telis`) |
 | `rf_analyze_rolling_code` | Analyze 1..8 captures for `KeeLoq`, `Somfy Telis`, or generic consecutive rolling-code hopping |
+| `rf_signal_snapshot` | Build a time-domain OOK waveform snapshot & 8–48 bin dual-polarity (`+HIGH`/`-LOW`) µs pulse-width histogram with K-Means centroids for a saved `.sub` (RAW or Key) or inline pulses |
 | `rf_decode_sensor` | Decode TPMS (`Schrader`/`Toyota`) or Weather (`Oregon`/`Acurite`/`LaCrosse`) telemetry (supports `sim_sample: true`) |
 | `rf_decode_pocsag` | Pure-Go POCSAG (`512/1200/2400 bps`) decoder with BCH(31,21) 1-bit error correction & 7-bit alpha / 4-bit numeric |
 | `rf_decode_wmbus` | Pure-Go EN 13757-4 Wireless M-Bus (`T1/C1/S1`, `868.95 MHz`) decoder (M-field, BCD serial, device type, CI, CRC-16) |

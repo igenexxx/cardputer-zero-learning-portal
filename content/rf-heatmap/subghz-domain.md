@@ -113,6 +113,13 @@ Each frame is preceded by a long **Sync Gap** (carrier OFF for `~30× TE` to `36
 - **Fixed Code** (`Princeton`, `CAME`, `Linear`): Sends the **exact same bit sequence** every time you press the button. Simple and cheap, which is why RF Heatmap can decode and display the static hex key immediately.
 - **Rolling Code** (`KeeLoq`, `Somfy Telis`, modern car fobs): Encrypts a **monotonically increasing counter** with a secret manufacturer key on every button press. Every transmission produces a completely different ciphertext; the receiver rejects any previously seen counter value to prevent simple replay attacks.
 
+### Reading Captured Signal Snapshots & Pulse-Width Histograms
+When you press **`7 SNAP` / `V`** in `rf-heatmap`, the app builds both a **time-domain OOK square-wave snapshot** and a **dual-polarity (`+HIGH` / `-LOW`) microsecond pulse-width histogram**:
+
+- **Sharp Bimodal Peaks (`S` and `L`)**: Clean OOK PWM transmitters concentrate almost all data pulses into two narrow histogram towers at `ShortUs` (`1× TE`) and `LongUs` (`2×` or `3× TE`). Measuring the ratio `L / S` immediately distinguishes `CAME` (`~1.85–2.0×`) from `Princeton` / `Linear` (`~3.0×`), while a single narrow tower suggests **Manchester** or uniform bit-rate encoding.
+- **Dual-Polarity (`+HIGH` Green vs. `-LOW` Cyan) Asymmetry**: In an ideal receiver, symmetric protocols place equal `+HIGH` and `-LOW` counts in the same `S` and `L` bins. If the CC1101's AGC or OOK slicer threshold is slightly biased (e.g., transmitter held too close or weak SNR), `+HIGH` pulses shift slightly wider while `-LOW` gaps shrink — visible instantly as green and cyan peaks offset by 1–2 bins.
+- **Flat / Dispersed Histogram (High Jitter)**: Random EMI or background noise spreads evenly across all 24 bins with high jitter (`> 25%`) and no repeating amber sync gaps in the waveform panel, letting you verify why `PulseNet-RF` or the noise guard rejected a capture.
+
 ---
 
 ## Interactive Lab: OOK Pulse & TE Waveform Decoder

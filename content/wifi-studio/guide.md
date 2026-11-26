@@ -1,4 +1,4 @@
-# WiFi Studio — App Guide & Controls (`v0.1.0`)
+# WiFi Studio — App Guide & Controls (`v0.1.1`)
 
 **WiFi Studio** (`wifi-studio`) turns CardputerZero's onboard **2.4 GHz Wi-Fi (`wlan0`)** transceiver into a non-root pocket wireless engineering, WIDS, LAN reconnaissance, and Everyday-Carry (EDC) RF sensing lab powered by `fi.w1.wpa_supplicant1` D-Bus (`netdev`), `/proc/net/wireless`, unprivileged Linux sockets, and an embedded **3-model Pure-Go INT8 `.czml` Neural Suite** (`WiFiAPNet-1D`, `WiFiMotionNet-1D`, `WiFiThreatAE` — `0 allocs/op`).
 
@@ -13,7 +13,8 @@
 
 - **Live Airspace Verdict Banner**: Translates real-time 2.4 GHz radio telemetry into plain English — **emerald** (`All clear · N APs · Best Ch 11`), **amber** (heavy channel congestion, unlocked WPS router, or `[NEW]` ambient APs since your room baseline), or **red** (active Evil-Twin `IEFingerprintHash` drift, `WiFiThreatAE` `[ANOM]`, ARP Spoof, or `SPYCAM_SUSPECT`).
 - Starts in **Simple Mode** (**7** everyday screens, starting with **`Quick Missions`** at **#1**): `Quick Missions`, `Bell-Curve Spectrum`, `Wi-Fi Radar`, `RSSI Foxhunt`, `Link Health`, `Saved & Exports`, and `Settings`.
-- Press **`5 EXPERT`** on Home (or toggle in Settings) to unlock **+6 Engineering Labs**: **Beacon IE Forensics**, **Evil-Twin WIDS**, **LAN & IoT Recon**, **Motion Tripwire & Crowd Pulse**, **Room Heatmap**, and **Net-Tools**.
+- Press **`7 EXPERT`** on Home (or toggle in Settings) to unlock **+6 Engineering Labs**: **Beacon IE Forensics**, **Evil-Twin WIDS**, **LAN & IoT Recon**, **Motion Tripwire & Crowd Pulse**, **Room Heatmap**, and **Net-Tools**.
+- **Context-Aware Help (`H` / `8 HELP` on Home)**: Press **`H`** on any screen or overlay (including Radar Smart Action Sheet, AP Dossier, Quick Mission wizards, IE Forensics Audit/Tags, LAN Port Audit, Motion/Crowd sub-tabs, and Net-Tools WoL) to open a full-screen cyan-framed help modal showing a 2-line summary and exact color-coded controls (**cyan** for `4..8` bottom softkeys, **amber** for keyboard hotkeys, auto-paginated with **`Z`/`C`**, closed with **`H` / `Enter` / `Esc`**).
 
 ---
 

@@ -163,9 +163,9 @@ Each enabled source syncs into its own read-only pack folder at **`~/ir-studio/d
 
 ---
 
-## Keyboard Reference & Built-In Help (`H`)
+## Keyboard Reference & Context-Aware Help (`H`)
 
-Press **`H`** from any screen to open the **4-page built-in Help modal** (`Z`/`C` turns pages `1/4..4/4`; `H`/`Esc` closes).
+Press **`H`** from any screen or sub-view to open the **Context-Aware Help modal** tailored to the active screen and sub-state (e.g., `HOME MENU`, `READ & REPLAY (LISTEN/CAPTURED)`, `MY REMOTES`, `DB BROWSER`, `REMOTE DECK`, `UNIVERSAL OFF`, `SMART AC CONTROLLER`, `IR LAB`, `MACROS`, `SETTINGS`, and `MANAGE DB SOURCES`). Bottom-bar softkeys (`4..8`) are highlighted in **cyan**, keyboard hotkeys in **amber**, and multi-page lists paginate automatically with **`Z`/`C`** (`H`/`Enter`/`Esc` closes).
 
 | Global Key | Function |
 | :--- | :--- |
@@ -174,7 +174,7 @@ Press **`H`** from any screen to open the **4-page built-in Help modal** (`Z`/`C
 | **`4`..`8`** | Bottom softkey tiles aligned above keys `4..8` |
 | **`Esc`** | Step back (`Remote → My Remotes → HOME`); prompts exit confirmation on `HOME` |
 | **`Tab` / `9` / `0`** | Return to `HOME` (Simple Mode) or cycle all screens (Expert Mode) |
-| **`H`** | Toggle 4-page built-in Help modal |
+| **`H`** | Toggle context-aware Help modal for the active screen |
 | **`Q`** | Immediate clean exit (restores `38 kHz / 33%` defaults) |
 
 ---

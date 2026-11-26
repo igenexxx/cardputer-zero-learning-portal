@@ -178,11 +178,11 @@ Example **`~/.config/nfc-studio/sources.json`** (synced into read-only **`~/nfc-
 
 ---
 
-### Built-In Help Overlay (`H`)
+### Context-Aware Help Modal (`H`)
 
-![NFC Studio built-in 4-page Help modal](assets/nfc-studio/help.png)
+![NFC Studio Context-Aware Help modal](assets/nfc-studio/help.png)
 
-Press **`H`** from any screen to open the 4-page on-device quick reference covering controls, tag fields (`UID`/`ATQA`/`SAK`), color-coded NTAG memory layout, and emulation/library paths. Turn pages with **`Z` / `C`** (or `Left` / `Right` / `Space` / `Tab`) and close with **`Enter`**, **`H`**, **`Q`**, or **`Esc`**.
+Press **`H`** from any screen or sub-state (`HOME`, `Read & Clone`, `My Cards`, `Emulate Card`, `Write to Card` Idle/Armed/Writing, `NFC Radar Lab`, `Card Memory` Hex/NDEF, `Auto-Emu Probe` Idle/Running, `Settings`, or `Manage DB Sources`) to open a clean **Context-Aware Help** modal tailored to that exact view. It displays a 2-line summary card and color-coded keycap badges (**Cyan** for bottom-bar softkeys `4..8`, **Amber** for direct hotkeys), auto-paginating when a screen has more than 6 controls. Turn pages with **`Z` / `C`** (or `Left` / `Right` / `Space` / `Tab`) and close with **`H`**, **`Enter`**, or **`Esc`**.
 
 ---
 
@@ -199,7 +199,7 @@ CardputerZero's 46-key matrix maps directly to the 5 bottom-bar softkeys (`4`–
 | **`F` / `X`** (or `↑` / `↓`) | Scroll memory pages (`DUMP`) or file list (`SAVED`) |
 | **`Z` / `C`** (or `←` / `→`) | Previous / Next page inside the Help overlay |
 | **`Enter`** | Quick-emulate current tag (`SCAN`), start/stop emulation (`EMU`), or emulate selected file (`SAVED`) |
-| **`H`** | Toggle 4-page built-in Help overlay |
+| **`H`** | Toggle Context-Aware Help modal for the active screen |
 | **`Q`** or **`Esc`** | Close Help overlay, or quit `nfc-studio` cleanly (powers down RF field) |
 
 ### Per-Tab Softkeys (`4` – `8`)
